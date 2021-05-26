@@ -58,5 +58,14 @@ class BeetrackAPI:
 
     def create_dispatch(self, payload):
         url = self.base_url + "/dispatches"
-        r = requests.post(url, json=payload, headers=self.headers).json()
+        r = requests.post(url, json=payload, headers=self.headers)
         return r
+
+    def import_file(self, file):
+        url = self.base_url + "/import"
+        header = {
+            "X-AUTH-TOKEN": self.api_key,
+        }
+        r = requests.post(url, files=file, headers=header)
+        return r
+

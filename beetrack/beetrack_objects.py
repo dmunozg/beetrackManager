@@ -1,18 +1,19 @@
 import sys
 import json
+from six import string_types
 
 
 class Item:
     def __init__(
-        self, itemDict, name=None, description=None, quantity=None, code=None,
+        self, itemDict=None, name=None, description=None, quantity=0, code=None,
     ):
-        if type(itemDict) == dict:
+        if isinstance(itemDict, dict):
             self.id = itemDict["id"]
             self.name = itemDict["name"]
             self.description = itemDict["description"]
             self.quantity = itemDict["quantity"]
             self.code = itemDict["code"]
-        elif type(itemDict) == str:
+        elif isinstance(code, str):
             self.id = itemDict
             self.name = name
             self.description = description
@@ -20,9 +21,7 @@ class Item:
             self.code = code
         else:
             raise TypeError(
-                "Items must be created from dict or str, not {}".format(
-                    type(type(itemDict))
-                )
+                "Items must be created from dict or str, not {}".format(type(itemDict))
             )
         pass
 
@@ -34,7 +33,7 @@ class Item:
             itemDict["name"] = self.name
         if self.description:
             itemDict["description"] = self.description
-        if self.quantity:
+        if self.quantity is not None:
             itemDict["quantity"] = self.quantity
         if self.code:
             itemDict["code"] = self.code
@@ -44,6 +43,8 @@ class Item:
         json.dumps(self.dump_dict())
 
 
+# TODO
+# Esto hay que cambiarlo por una base de datos
 dispatchTypeDict = {"LAST MILE": 0, "FIRST MILE": 1, "FULFILLMENT": 2}
 dispatchTypeReverseDict = {v: k for k, v in dispatchTypeDict.items()}
 dispatchPriorityDict = {"NORMAL": 0, "URGENTE": 1}
@@ -61,6 +62,7 @@ class Dispatch:
         contactID=None,
         contactComment=None,
         pickupAddress=None,
+        firstMileDestination=None,
         priority=0,  # 0 = Normal, 1 = Urgente
         maxDeliveryTime=None,
         items=[],
@@ -68,7 +70,7 @@ class Dispatch:
         mode=3,
         dispatchType=0,  # 0 = Last Mile, 1 = First Mile, 2 = Fullfillment.
     ):
-        if type(dispatchDict) == dict:
+        if isinstance(dispatchDict, dict):
             self.id = dispatchDict["identifier"]
             self.contactName = dispatchDict["contact_name"]
             self.contactAddress = dispatchDict["contact_address"]
@@ -106,6 +108,8 @@ class Dispatch:
                             ),
                             file=sys.stderr,
                         )
+                elif tag["name"] == "FM_Direccion":
+                    self.firstMileDestination = tag["value"]
                 else:
                     print(
                         'ERROR: Unknown tag "{}". Discarding.'.format(tag["name"]),
@@ -116,18 +120,19 @@ class Dispatch:
             for itemDict in dispatchDict["items"]:
                 self.items.append(Item(itemDict))
             self.pickupAddress = None  # Este no aparece en el API
-        elif type(dispatchType) == str:
+        elif isinstance(dispatchDict, string_types) or isinstance(dispatchDict, int):
             self.id = dispatchDict
             self.contactName = contactName
             self.contactAddress = contactAddress
-            self.contactPhone = contactPhone
+            self.contactPhone = str(contactPhone)
             self.contactEmail = contactEmail
             self.contactID = contactID
             self.contactComment = contactComment
             self.pickupAddress = pickupAddress
+            self.firstMileDestination = firstMileDestination
             if type(priority) == int:
                 self.priority = priority
-            elif type(priority) == str:
+            elif type(priority) == string_types:
                 try:
                     self.priority = dispatchPriorityDict[priority.upper()]
                 except KeyError:
@@ -150,7 +155,7 @@ class Dispatch:
             self.mode = mode
             if type(dispatchType) == int:
                 self.dispatchType = dispatchType
-            elif type(dispatchType) == str:
+            elif type(dispatchType) == string_types:
                 try:
                     self.dispatchType = dispatchPriorityDict[dispatchType.upper()]
                 except KeyError:
@@ -180,13 +185,7 @@ class Dispatch:
     def dump_dict(self):
         priorityStr = dispatchPriorityReverseDict[self.priority]
         dispatchTypeStr = dispatchTypeReverseDict[self.dispatchType]
-        dispatchDict = {
-            "identifier": self.id,
-            "tags": [
-                {"name": "Prioridad", "value": priorityStr.title()},
-                {"name": "Tipo de despacho", "value": dispatchTypeStr.title()},
-            ],
-        }
+        dispatchDict = {"identifier": self.id}
         if self.contactName:
             dispatchDict["contact_name"] = self.contactName
         if self.contactAddress:
@@ -197,19 +196,28 @@ class Dispatch:
             dispatchDict["contact_id"] = self.contactID
         if self.contactEmail:
             dispatchDict["contact_email"] = self.contactEmail
-        if self.contactComment:
-            dispatchDict["tags"].append(
-                {"name": "Información adicional", "value": self.contactComment}
-            )
         if len(self.items) >= 1:
             dispatchDict["items"] = []
             for item in self.items:
                 dispatchDict["items"].append(item.dump_dict())
+        dispatchDict["tags"] = [
+            {"name": "Prioridad", "value": priorityStr.title()},
+            {"name": "Tipo de despacho", "value": dispatchTypeStr.title()},
+        ]
+        if self.contactComment:
+            dispatchDict["tags"].append(
+                {"name": "Información adicional", "value": self.contactComment}
+            )
+        if self.firstMileDestination:
+            dispatchDict["tags"].append(
+                {"name": "FM_Direccion", "value": self.firstMileDestination}
+            )
         if self.client:
             dispatchDict["tags"].append({"name": "Cliente", "value": self.client})
         if self.pickupAddress:
             dispatchDict["pickup_address"] = {"name": self.pickupAddress}
+        dispatchDict["mode"] = self.mode
         return dispatchDict
 
     def dump_json(self):
-        return json.dumps(self.dump_dict())
+        return json.dumps(self.dump_dict(), ensure_ascii=False)
