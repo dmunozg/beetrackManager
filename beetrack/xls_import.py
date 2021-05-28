@@ -146,18 +146,19 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
     dispatchID = _validate_ID(excelRow[0])
     documentType = _validate_document_type(excelRow[1])
     documentNumber = _validate_document_number(excelRow[2], documentType)
-    itemDescription = excelRow[3].value
-    itemQuantity = _validate_item_quantity(excelRow[4])
-    transportType = _validate_transport_type(excelRow[5])
-    contactName = excelRow[6].value
-    contactPhone = excelRow[7].value
-    contactEmail = excelRow[8].value
-    contactAddress = _validate_contact_address(excelRow[9], excelRow[10])
-    contactComment = excelRow[11].value
-    maxDeliveryTime = excelRow[12].value
-    priority = _validate_priority(excelRow[13])
-    firstMileTransporter = excelRow[14].value
-    contactID = excelRow[15].value
+    additionalDocument = excelRow[3].value
+    itemDescription = excelRow[4].value
+    itemQuantity = _validate_item_quantity(excelRow[5])
+    transportType = _validate_transport_type(excelRow[6])
+    contactName = excelRow[7].value
+    contactPhone = excelRow[8].value
+    contactEmail = excelRow[9].value
+    contactAddress = _validate_contact_address(excelRow[10], excelRow[11])
+    contactComment = excelRow[12].value
+    maxDeliveryTime = excelRow[13].value
+    priority = _validate_priority(excelRow[14])
+    firstMileTransporter = excelRow[15].value
+    contactID = excelRow[16].value
     # Si el despacho es First Mile la dirección debe ser la dirección del transporte, y el destinatario debe ir en firstMileDestination
     if transportType == 1:
         firstMileDestination = contactAddress
@@ -188,6 +189,7 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
             firstMileDestination=firstMileDestination,
             pickupAddress=pickupAddress,
             items=[resultingItem],
+            additionalDocument=additionalDocument,
         )
     return (resultingDispatch, errorCode, warningList)
 

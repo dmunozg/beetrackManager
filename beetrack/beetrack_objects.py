@@ -63,6 +63,7 @@ class Dispatch:
         contactComment=None,
         pickupAddress=None,
         firstMileDestination=None,
+        additionalDocument=None,
         priority=0,  # 0 = Normal, 1 = Urgente
         maxDeliveryTime=None,
         items=[],
@@ -110,6 +111,8 @@ class Dispatch:
                         )
                 elif tag["name"] == "FM_Direccion":
                     self.firstMileDestination = tag["value"]
+                elif tag["name"] == "Documento adicional":
+                    self.additionalDocument = tag["value"]
                 else:
                     print(
                         'ERROR: Unknown tag "{}". Discarding.'.format(tag["name"]),
@@ -129,6 +132,7 @@ class Dispatch:
             self.contactID = contactID
             self.contactComment = contactComment
             self.pickupAddress = pickupAddress
+            self.additionalDocument = additionalDocument
             self.firstMileDestination = firstMileDestination
             if type(priority) == int:
                 self.priority = priority
@@ -214,6 +218,10 @@ class Dispatch:
             )
         if self.client:
             dispatchDict["tags"].append({"name": "Cliente", "value": self.client})
+        if self.additionalDocument:
+            dispatchDict["tags"].append(
+                {"name": "Documento adicional", "value": self.additionalDocument}
+            )
         if self.pickupAddress:
             dispatchDict["pickup_address"] = {"name": self.pickupAddress}
         dispatchDict["mode"] = self.mode
