@@ -136,4 +136,8 @@ for email in fetchedEmails:
             else:
                 print("CRITICAL: Unknown error code.")
     email.mark_read()
-print("[{timestamp}] Checked all mails. Going to sleep.")
+print(
+    "[{timestamp}] Checked all mails. Going to sleep.".format(
+        timestamp=time.strftime("%H:%M:%S")
+    )
+)
