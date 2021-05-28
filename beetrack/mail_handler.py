@@ -58,6 +58,10 @@ class Inbox:
         self.imap = imaplib.IMAP4_SSL(self.imapServer)
         self.imap.login(self.user, self.password)
 
+    def logout(self):
+        self.imap.close()
+        self.imap.logout()
+
     def check_inbox(
         self, folder="INBOX", unread_only=True, last=None, attachmentsDir="attachments"
     ):

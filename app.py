@@ -45,7 +45,8 @@ fetchedEmails = MailInbox.check_inbox()
 if len(fetchedEmails) == 0:
     timestamp = time.strftime("%H:%M:%S")
     print(f"[{timestamp}] No new mail found. Exiting.", file=sys.stdout)
-
+    MailInbox.logout()
+    sys.exit(0)
 for email in fetchedEmails:
     if email._from in ALLOWED_CLIENTS_DF["allowedEmail"].to_list():
         timestamp = time.strftime("%H:%M:%S")
@@ -138,6 +139,7 @@ for email in fetchedEmails:
             else:
                 print("CRITICAL: Unknown error code.")
     email.mark_read()
+MailInbox.logout()
 print(
     "[{timestamp}] Checked all mails. Going to sleep.".format(
         timestamp=time.strftime("%H:%M:%S")
