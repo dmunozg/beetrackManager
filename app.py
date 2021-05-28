@@ -63,12 +63,14 @@ for email in fetchedEmails:
     clientName = (
         ALLOWED_CLIENTS_DF["clientName"]
         .where(ALLOWED_CLIENTS_DF["allowedEmail"] == email._from)
-        .dropna()[0]
+        .dropna()
+        .iloc[0]
     )
     pickupAddress = (
         ALLOWED_CLIENTS_DF["pickupAddress"]
         .where(ALLOWED_CLIENTS_DF["allowedEmail"] == email._from)
-        .dropna()[0]
+        .dropna()
+        .iloc[0]
     )
     timestamp = time.strftime("%H:%M:%S")
     for attachment in email.attachments:

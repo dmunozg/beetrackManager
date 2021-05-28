@@ -112,6 +112,7 @@ class Inbox:
                 currentEmail.seen = True
             # Leer contenido del correo
             # if the email message is multipart
+            body = None
             if parsedEmail.is_multipart():
                 # iterate over email parts
                 for part in parsedEmail.walk():
