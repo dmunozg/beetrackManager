@@ -203,7 +203,7 @@ def xlsx_to_dispatches(xlsxFilename, client, pickupAddress):
         warningSet.add("No fue posible abrir el archivo .xlsx. Posiblemente corrupto.")
         return (foundDispatches, warningSet)
     dispatchesSheet = xlsxData.active
-    for row in dispatchesSheet.iter_rows(min_row=2, max_col=16):
+    for row in dispatchesSheet.iter_rows(min_row=2, max_col=17):
         # Omitir la fila si está vacía
         if not any(cell.value for cell in row):
             continue
