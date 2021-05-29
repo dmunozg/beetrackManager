@@ -93,6 +93,14 @@ class Inbox:
             for content in rawEmail:
                 if isinstance(content, tuple):
                     rawEmail = content
+                    break
+            else:
+                print(
+                    "[{timestamp}] MailID {mailID} contains no RFC822 tag. Can't read.".format(
+                        timestamp=time.strftime("%H:%M:%S"), mailID=mailID
+                    )
+                )
+                continue
             parsedEmail = email.message_from_bytes(rawEmail[1])
             rawSubject, encoding = email.header.decode_header(
                 parsedEmail.get("Subject")
