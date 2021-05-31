@@ -118,12 +118,8 @@ class Inbox:
             else:
                 subject = rawSubject
             _from = email.utils.parseaddr(parsedEmail["FROM"])[1]
-            rawRecipients = email.header.decode_header(parsedEmail.get("To"))[0]
-            if isinstance(rawRecipients, bytes):
-                recipients = rawRecipients.decode(encoding)
-            else:
-                recipients = rawRecipients
-            print(recipients)
+            print(email.utils.parseaddr(parsedEmail.get("To")))
+            recipients = email.utils.parseaddr(parsedEmail.get("To"))[1]
             recipientList = [rec.strip() for rec in recipients[0].split(",")]
             # Crear objeto Email
             currentEmail = Email(
