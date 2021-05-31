@@ -220,8 +220,8 @@ def build_text_report(reportRawData: list) -> str:
             )
             taintedImport = True
             for warning in fileReportData["general_issues"]:
-                fileReportData += "- {warning}\n".format(warning=warning)
-            fileReportData += "\n"
+                fileResultMsg += "- {warning}\n".format(warning=warning)
+            fileResultMsg += "\n"
         else:
             fileResultMsg += 'Recibimos el archivo "{filename}" con despachos!\n\n'.format(
                 filename=fileReportData["filename"]
@@ -242,7 +242,7 @@ def build_text_report(reportRawData: list) -> str:
             fileResultMsg += "Los siguientes despachos no pudieron ser importados:\n"
             for failedDispatch in failedImports:
                 fileResultMsg += " - {dispatchID}:\n".format(
-                    dispatchID=failedDispatch[0].id
+                    dispatchID=failedDispatch[0]
                 )
                 for warningMsg in failedDispatch[1]:
                     fileResultMsg += "\t {msg}\n".format(msg=warningMsg)
