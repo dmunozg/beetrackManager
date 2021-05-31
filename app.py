@@ -110,6 +110,7 @@ for email in fetchedEmails:
     else:
         allowOverride = False
     timestamp = time.strftime("%H:%M:%S")
+    reports = []
     for attachment in email.attachments:
         if not check_if_allowed(attachment):
             continue
@@ -121,6 +122,12 @@ for email in fetchedEmails:
         foundDispatchesData, warnings = xls_import.xlsx_to_dispatches(
             attachment, clientName, pickupAddress
         )
+        reportData = {
+            "filename": os.path.basename(attachment),
+            "general_issues": warnings,
+            "dispatches": foundDispatchesData,
+        }
+        reports.append(reportData)
         if len(foundDispatchesData) == 0:
             print(
                 "[{timestamp}] Could not parse any dispatches in file {filename}:".format(
@@ -182,6 +189,7 @@ for email in fetchedEmails:
                 )
             else:
                 print("CRITICAL: Unknown error code.")
+
     email.mark_read()
 MailInbox.logout()
 print(

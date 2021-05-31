@@ -67,7 +67,7 @@ class Dispatch:
         maxDeliveryTime=None,
         items=[],
         client=None,
-        mode=3,
+        mode=2,
         dispatchType=0,  # 0 = Last Mile, 1 = First Mile, 2 = Fullfillment.
     ):
         if isinstance(dispatchDict, dict):

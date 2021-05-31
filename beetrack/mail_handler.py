@@ -171,15 +171,66 @@ class SMTPHandler:
         self.port = port
 
     def send_text_mail(self, mail: Email):
-        message = """\
-            Subject: {subject}
-            
-            {body}""".format(
-            subject=mail.subject, body=mail.body
+        message = message = email.message.EmailMessage()
+        message["From"] = "Sistema de gestión de despachos Logica Express <{f}>".format(
+            f=mail._from
         )
+        message["To"] = mail.recipient
+        message["Subject"] = mail.subject
+        message.set_content(mail.body)
         SSLContext = ssl.create_default_context()
         with smtplib.SMTP_SSL(
             self.server, self.port, context=SSLContext
         ) as smtpConnection:
             smtpConnection.login(self.user, self.passwd)
-            smtpConnection.sendmail(mail._from, mail.recipient, message)
+            smtpConnection.sendmail(mail._from, mail.recipient, message.as_string())
+
+def send_confirmation_mail(reportData, to, from, subject) -> bool:
+    return True
+
+def build_text_report(reportRawData: list) -> str:
+    taintedImport = False
+    for fileReportData in reportRawData:
+        if len(fileReportData["general_issues"])>0:
+            fileResultMsg = '¡Atención! Hubo algunos problemas al importar tus despachos del archivo {filename}:\n\n'.format(filename=fileReportData['filename'])
+            taintedImport = True
+            for warning in fileReportData['general_issues']:
+                fileReportData += '- {warning}\n'.format(warning=warning)
+            fileReportData += '\n'
+        successfulImports = []
+        issuesImports = []
+        failedImports = []
+        for dispatch, errorCode, warnings in fileReportData['dispatches']:
+            if errorCode == 0:
+                successfulImports.append((dispatch, warnings))
+            elif errorCode == 2:
+                failedImports.append((dispatch, warnings))
+            elif errorCode == 1:
+                issuesImports.append((dispatch, warnings))
+            else:
+                raise Exception(f'DispatchID {dispatch.id} code unknown: {errorCode}')
+        if len(failedImports)>0:
+            fileResultMsg += 'Los siguientes despachos no pudieron ser importados:\n'
+            for failedDispatch in failedImports:
+                fileResultMsg += ' - {dispatchID}:\n'.format(dispatchID=failedDispatch[0].id)
+                for warningMsg in failedDispatch[1]:
+                    fileResultMsg += '\t {msg}\n'.format(msg=warningMsg)
+                fileResultMsg += '\n'
+                taintedImport = True
+        if len(issuesImports)>0:
+            fileResultMsg += 'Los siguientes despachos fueron importados con observaciones:\n'
+            for issuesDispatch in issuesImports:
+                fileResultMsg += ' - {dispatchID}:\n'.format(dispatchID=issuesDispatch[0].id)
+                for warningMsg in issuesDispatch[1]:
+                    fileResultMsg += '\t {msg}\n'.format(msg=warningMsg)
+                fileResultMsg += '\n'
+                taintedImport = True
+        if len(successfulImports)>0:
+            fileResultMsg += 'Los siguientes despachos fueron importados exitosamente:\n'
+            for successfulDispatch in successfulImports:
+                fileResultMsg += ' - {dispatchID}:\n'.format(dispatchID=successfulDispatch[0].id)
+                fileResultMsg += '\n'
+        if taintedImport:
+            fileResultMsg += 'Puedes responder a este correo adjuntando un archivo de despachos corregido hasta el final del día.\n\n'
+            fileResultMsg += 'Para cualquier problema, contáctanos a soporte@logicaexpress.cl'
+    return True
