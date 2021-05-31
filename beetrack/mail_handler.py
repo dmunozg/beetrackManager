@@ -1,4 +1,4 @@
-import imaplib, email, os, re, time, sys
+import imaplib, email, os, re, time, sys, re
 import smtplib, ssl
 from pathlib import Path
 from copy import copy
@@ -45,7 +45,23 @@ class Email:
 
     def read_overrides(self, clientDF: pd.DataFrame) -> dict:
         overrides = {"Cliente": None, "pickup_address": None}
-        return {}
+        clientPattern = re.compile(r"Cliente:([\ \w]+)")
+        pAddressPattern = re.compile(r"Recogida:([\ \w]+)")
+        if clientPattern.findall(self.body):
+            overrides["Cliente"] = clientPattern.findall(self.body)[0].strip()
+        if pAddressPattern.findall(self.body):
+            overrides["pickup_address"] = pAddressPattern.findall(self.body)[0].strip()
+        else:
+            queryClientPickupAdrress = (
+                clientDF["pickupAddress"]
+                .where(clientDF["clientName"] == overrides["Cliente"])
+                .dropna()
+            )
+            if len(queryClientPickupAdrress) > 0:
+                overrides["pickup_address"] = queryClientPickupAdrress.iloc[0]
+            else:
+                overrides["pickup_address"] = None
+        return overrides
 
 
 class Inbox:
@@ -118,7 +134,6 @@ class Inbox:
             else:
                 subject = rawSubject
             _from = email.utils.parseaddr(parsedEmail["FROM"])[1]
-            print(email.utils.parseaddr(parsedEmail.get("To")))
             recipients = email.utils.parseaddr(parsedEmail.get("To"))[1]
             recipientList = [rec.strip() for rec in recipients[0].split(",")]
             # Crear objeto Email

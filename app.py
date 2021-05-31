@@ -164,10 +164,21 @@ def main():
                     timestamp=time.strftime("%H:%M:%S")
                 )
             )
-            print(email.body)
-            allowOverride = True
-        else:
-            allowOverride = False
+            overridesDict = email.read_overrides(ALLOWED_CLIENTS_DF)
+            if overridesDict["Cliente"]:
+                clientName = overridesDict["Cliente"]
+                print(
+                    "[{timestamp}] Sender overrided client name: {clientName}".format(
+                        timestamp=time.strftime("%H:%M:%S"), clientName=clientName
+                    )
+                )
+            if overridesDict["pickup_address"]:
+                pickupAddress = overridesDict["pickup_address"]
+                print(
+                    "[{timestamp}] Sender overrided pickup address: {pickupAddress}".format(
+                        timestamp=time.strftime("%H:%M:%S"), pickupAddress=pickupAddress
+                    )
+                )
         timestamp = time.strftime("%H:%M:%S")
         reports = []
         for attachment in email.attachments:
