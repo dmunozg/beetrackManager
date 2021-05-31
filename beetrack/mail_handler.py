@@ -43,7 +43,7 @@ class Email:
         print(f"[{timestamp}] MailID {self.id} from {self._from} marked as read")
         self.seen = True
 
-    def read_overrides(self, clientDF: pd.dataframe) -> dict:
+    def read_overrides(self, clientDF: pd.DataFrame) -> dict:
         overrides = {"Cliente": None, "pickup_address": None}
         return {}
 
