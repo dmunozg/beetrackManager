@@ -11,24 +11,50 @@ ALLOWED_FILES_EXTENSIONS = [
     "xlsx",
 ]
 # TODO
-# Esto hay que reemplazarlo por una base de datos SQL
+# Esto hay que reemplazarlo por una tabla SQL
 ALLOWED_CLIENTS_DF = pd.DataFrame(
     [
-        ["lkeeler.flipout@gmail.com", "Pruebas", "TEST", "Reibo 3619, Puente Alto"],
+        [
+            "lkeeler.flipout@gmail.com",
+            "Pruebas",
+            "TEST",
+            "Reibo 3619, Puente Alto",
+            True,  # Allow override
+        ],
         [
             "matias@logicaexpress.cl",
             "Pruebas",
             "TEST",
             "Cerro Loma Larga 3610, Puente Alto",
+            True,  # Allow override
         ],
     ],
-    columns=["allowedEmail", "clientName", "codePrefix", "pickupAddress"],
+    columns=[
+        "allowedEmail",
+        "clientName",
+        "codePrefix",
+        "pickupAddress",
+        "allowOverride",
+    ],
 )
 
 
 def check_if_allowed(filename):
     extension = filename.split(".")[-1]
     if extension in ALLOWED_FILES_EXTENSIONS:
+        return True
+    else:
+        return False
+
+
+def user_overrides(emailAddress):
+    overridesList = (
+        ALLOWED_CLIENTS_DF["allowedEmail"]
+        .where(ALLOWED_CLIENTS_DF["allowOverride"] == True)
+        .dropna()
+        .tolist()
+    )
+    if emailAddress in overridesList:
         return True
     else:
         return False
@@ -73,6 +99,16 @@ for email in fetchedEmails:
         .dropna()
         .iloc[0]
     )
+    if user_overrides(email._from):
+        print(
+            "[{timestamp}] Sender can override data. Reading mail body".format(
+                timestamp=time.strftime("%H:%M:%S")
+            )
+        )
+        print(email.body)
+        allowOverride = True
+    else:
+        allowOverride = False
     timestamp = time.strftime("%H:%M:%S")
     for attachment in email.attachments:
         if not check_if_allowed(attachment):
@@ -118,6 +154,14 @@ for email in fetchedEmails:
                 continue
             else:
                 response = LogicaAPI.create_dispatch(newDispatch.dump_dict())
+                if os.getenv("DEBUG"):
+                    with open("{id}.json".format(id=newDispatch.id), "w") as jsonFile:
+                        json.dump(
+                            newDispatch.dump_dict(),
+                            jsonFile,
+                            indent=4,
+                            ensure_ascii=False,
+                        )
                 print(response)
             if errorCode == 1:
                 print(
