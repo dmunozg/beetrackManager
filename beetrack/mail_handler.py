@@ -2,6 +2,7 @@ import imaplib, email, os, re, time, sys
 import smtplib, ssl
 from pathlib import Path
 from copy import copy
+import pandas as pd
 
 
 def clean(text):
@@ -41,6 +42,10 @@ class Email:
         self.Inbox.imap.store(self.id, "+FLAGS", "\SEEN")
         print(f"[{timestamp}] MailID {self.id} from {self._from} marked as read")
         self.seen = True
+
+    def read_overrides(self, clientDF: pd.dataframe) -> dict:
+        overrides = {"Cliente": None, "pickup_address": None}
+        return {}
 
 
 class Inbox:
@@ -118,6 +123,7 @@ class Inbox:
                 recipients = rawRecipients.decode(encoding)
             else:
                 recipients = rawRecipients
+            print(recipients)
             recipientList = [rec.strip() for rec in recipients[0].split(",")]
             # Crear objeto Email
             currentEmail = Email(
@@ -289,10 +295,10 @@ def build_text_report(reportRawData: list) -> str:
                 "Los siguientes despachos fueron importados exitosamente:\n"
             )
             for successfulDispatch in successfulImports:
-                fileResultMsg += " - {dispatchID}:\n".format(
+                fileResultMsg += " - {dispatchID}\n".format(
                     dispatchID=successfulDispatch[0].id
                 )
-                fileResultMsg += "\n"
+            fileResultMsg += "\n"
 
         finalReport += fileResultMsg
     if taintedImport:
