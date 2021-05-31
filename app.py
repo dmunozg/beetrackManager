@@ -4,7 +4,14 @@ import os, time, sys, json
 import json, os, time, sys
 import pandas as pd
 
-REQUIRED_ENV_VARIABLES = ["BEETRACK_APIKEY", "IMAP_USER", "IMAP_PASSWD", "IMAP_SERVER"]
+REQUIRED_ENV_VARIABLES = [
+    "BEETRACK_APIKEY",
+    "IMAP_USER",
+    "IMAP_PASSWD",
+    "IMAP_SERVER",
+    "SMTP_SERVER",
+    "SMTP_PORT",
+]
 
 
 def check_if_env_is_set(env):
