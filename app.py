@@ -255,6 +255,7 @@ def main():
             to=email._from,
             subject=email.subject,
             outboxHandler=MailOutbox,
+            replyingTo=email.emailObject,
         )
         email.mark_read()
     MailInbox.logout()

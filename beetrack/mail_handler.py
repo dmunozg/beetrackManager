@@ -20,6 +20,7 @@ class Email:
         seen=False,
         attachments=[],
         fromInbox=None,
+        emailObject=None,
     ):
         self.subject = subject
         self._from = _from
@@ -29,6 +30,7 @@ class Email:
         self.id = id
         self.Inbox = fromInbox
         self.seen = seen
+        self.emailObject = emailObject
 
     def mark_read(self):
         timestamp = time.strftime("%H:%M:%S")
@@ -119,7 +121,13 @@ class Inbox:
             recipientList = [rec.strip() for rec in recipients[0].split(",")]
             # Crear objeto Email
             currentEmail = Email(
-                mailID, subject, _from, recipientList, fromInbox=self, attachments=[]
+                mailID,
+                subject,
+                _from,
+                recipientList,
+                fromInbox=self,
+                attachments=[],
+                emailObject=parsedEmail,
             )
             if "\\Seen" in _fetch_flags(mailID):
                 currentEmail.seen = True
@@ -179,13 +187,24 @@ class SMTPHandler:
         self.port = port
         pass
 
-    def send_text_mail(self, mail):
+    def send_text_mail(self, mail, replyingTo=None):
         message = message = email.message.EmailMessage()
         message["From"] = "Sistema de gestión de despachos Logica Express <{f}>".format(
             f=mail._from
         )
+        if replyingTo:
+            message["Subject"] = "RE: " + replyingTo["Subject"].replace(
+                "Re: ", ""
+            ).replace("RE: ", "")
+            message["References"] = replyingTo[
+                "Message-ID"
+            ]  # +replyingTo["References"].strip()
+            message["In-Reply-To"] = replyingTo["Message-ID"]
+            message["Thread-Topic"] = replyingTo["Thread-Topic"]
+            message["Thread-Index"] = replyingTo["Thread-Index"]
+        else:
+            message["Subject"] = mail.subject
         message["To"] = mail.recipient
-        message["Subject"] = mail.subject
         message.set_content(mail.body)
         SSLContext = ssl.create_default_context()
         with smtplib.SMTP_SSL(
@@ -199,13 +218,18 @@ class SMTPHandler:
 
 
 def send_confirmation_mail(
-    reportData: list, to: str, _from: str, subject: str, outboxHandler: SMTPHandler
+    reportData: list,
+    to: str,
+    _from: str,
+    subject: str,
+    outboxHandler: SMTPHandler,
+    replyingTo=None,
 ) -> bool:
     transactionEmail = Email(
         id=99, subject="Re:{subject}".format(subject=subject), _from=_from, recipient=to
     )
     transactionEmail.body = build_text_report(reportData)
-    print(outboxHandler.send_text_mail(transactionEmail))
+    print(outboxHandler.send_text_mail(transactionEmail, replyingTo))
     return True
 
 
