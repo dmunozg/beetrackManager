@@ -156,7 +156,7 @@ def main():
                     print(
                         "[{timestamp}] Failed to import dispatch {dispatchCode}:".format(
                             timestamp=time.strftime("%H:%M:%S"),
-                            dispatchCode=newDispatch.id,
+                            dispatchCode=newDispatch,
                         ),
                         file=sys.stderr,
                     )

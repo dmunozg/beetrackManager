@@ -34,6 +34,7 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
         if cell.value == None:
             errorCode = 2
             warningList.append("Crítico: No puede haber un despacho sin código.")
+            return "NONE"
         elif not isinstance(cell.value, str):
             errorCode = 2
             warningList.append("Crítico: El código debe ser alfanumérico.")
@@ -171,7 +172,7 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
         firstMileDestination = None
     # Generar el output sólo si no hubieron errores críticos
     if errorCode == 2:
-        resultingDispatch = None
+        resultingDispatch = dispatchID
     else:
         # Generar el objeto Item que describe los bultos
         resultingItem = Item(
