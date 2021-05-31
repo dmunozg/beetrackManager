@@ -62,7 +62,12 @@ def user_overrides(emailAddress):
 
 load_dotenv()
 LogicaAPI = BeetrackAPI(os.getenv("BEETRACK_APIKEY"), BASE_URL)
-
+MailOutbox = mail_handler.SMTPHandler(
+    user=os.getenv("IMAP_USER"),
+    passwd=os.getenv("IMAP_PASSWD"),
+    server=os.getenv("SMTP_SERVER"),
+    port=os.getenv("SMTP_PORT"),
+)
 MailInbox = mail_handler.Inbox(
     os.getenv("IMAP_USER"), os.getenv("IMAP_PASSWD"), os.getenv("IMAP_SERVER")
 )
@@ -189,7 +194,18 @@ for email in fetchedEmails:
                 )
             else:
                 print("CRITICAL: Unknown error code.")
-
+    print(
+        "[{timestamp}] Sending transactional email to {recipient}".format(
+            timestamp=time.strftime("%H:%M:%S"), recipient=email._from
+        ),
+    )
+    mail_handler.send_confirmation_mail(
+        reports,
+        _from=os.getenv("IMAP_USER"),
+        to=email._from,
+        subject=email.subject,
+        outboxHandler=MailOutbox,
+    )
     email.mark_read()
 MailInbox.logout()
 print(
