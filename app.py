@@ -107,9 +107,6 @@ def user_overrides(emailAddress):
         return False
 
 
-load_dotenv()
-
-
 def main():
     LogicaAPI = BeetrackAPI(os.getenv("BEETRACK_APIKEY"), BASE_URL)
     MailOutbox = mail_handler.SMTPHandler(
