@@ -216,6 +216,9 @@ def xlsx_to_dispatches(xlsxFilename, client, pickupAddress):
                 "Se encontraron filas sin código de despacho que fueron omitidas."
             )
             continue
+        elif not isinstance(row[0].value, str):
+            warningSet.add("Se encontraron filas con códigos no-alfanuméricos")
+            continue
         else:
             foundDispatches.append(excelrow_to_dispatch(row, client, pickupAddress))
     return (foundDispatches, warningSet)
