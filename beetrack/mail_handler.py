@@ -1,4 +1,5 @@
 import imaplib, email, os, re, time, sys
+import smtplib, ssl
 from pathlib import Path
 from copy import copy
 
@@ -138,7 +139,11 @@ class Inbox:
                         pass
                     if "attachment" in content_disposition:
                         # download attachment
-                        filename = part.get_filename()
+                        filename, encoding = email.header.decode_header(
+                            part.get_filename()
+                        )[0]
+                        if encoding is not None:
+                            filename = filename.decode(encoding)
                         if filename:
                             year_month = time.strftime("%Y-%m")
                             day = time.strftime("%d-%a")
@@ -164,3 +169,110 @@ class Inbox:
                 file=sys.stdout,
             )
         return foundEmails
+
+
+class SMTPHandler:
+    def __init__(self, user: str, passwd: str, server: str, port: int = 465):
+        self.user = user
+        self.passwd = passwd
+        self.server = server
+        self.port = port
+        pass
+
+    def send_text_mail(self, mail):
+        message = message = email.message.EmailMessage()
+        message["From"] = "Sistema de gestión de despachos Logica Express <{f}>".format(
+            f=mail._from
+        )
+        message["To"] = mail.recipient
+        message["Subject"] = mail.subject
+        message.set_content(mail.body)
+        SSLContext = ssl.create_default_context()
+        with smtplib.SMTP_SSL(
+            self.server, self.port, context=SSLContext
+        ) as smtpConnection:
+            smtpConnection.login(self.user, self.passwd)
+            response = smtpConnection.sendmail(
+                mail._from, mail.recipient, message.as_string()
+            )
+        return response
+
+
+def send_confirmation_mail(
+    reportData: list, to: str, _from: str, subject: str, outboxHandler: SMTPHandler
+) -> bool:
+    transactionEmail = Email(
+        id=99, subject="Re:{subject}".format(subject=subject), _from=_from, recipient=to
+    )
+    transactionEmail.body = build_text_report(reportData)
+    print(outboxHandler.send_text_mail(transactionEmail))
+    return True
+
+
+def build_text_report(reportRawData: list) -> str:
+    taintedImport = False
+    finalReport = ""
+    for fileReportData in reportRawData:
+        fileResultMsg = ""
+        if len(fileReportData["general_issues"]) > 0:
+            fileResultMsg += '¡Atención! Hubo algunos problemas al importar tus despachos del archivo "{filename}":\n\n'.format(
+                filename=fileReportData["filename"]
+            )
+            taintedImport = True
+            for warning in fileReportData["general_issues"]:
+                fileReportData += "- {warning}\n".format(warning=warning)
+            fileReportData += "\n"
+        else:
+            fileResultMsg += 'Recibimos el archivo "{filename}" con despachos!\n\n'.format(
+                filename=fileReportData["filename"]
+            )
+        successfulImports = []
+        issuesImports = []
+        failedImports = []
+        for dispatch, errorCode, warnings in fileReportData["dispatches"]:
+            if errorCode == 0:
+                successfulImports.append((dispatch, warnings))
+            elif errorCode == 2:
+                failedImports.append((dispatch, warnings))
+            elif errorCode == 1:
+                issuesImports.append((dispatch, warnings))
+            else:
+                raise Exception(f"DispatchID {dispatch.id} code unknown: {errorCode}")
+        if len(failedImports) > 0:
+            fileResultMsg += "Los siguientes despachos no pudieron ser importados:\n"
+            for failedDispatch in failedImports:
+                fileResultMsg += " - {dispatchID}:\n".format(
+                    dispatchID=failedDispatch[0].id
+                )
+                for warningMsg in failedDispatch[1]:
+                    fileResultMsg += "\t {msg}\n".format(msg=warningMsg)
+                fileResultMsg += "\n"
+                taintedImport = True
+        if len(issuesImports) > 0:
+            fileResultMsg += (
+                "Los siguientes despachos fueron importados con observaciones:\n"
+            )
+            for issuesDispatch in issuesImports:
+                fileResultMsg += " - {dispatchID}:\n".format(
+                    dispatchID=issuesDispatch[0].id
+                )
+                for warningMsg in issuesDispatch[1]:
+                    fileResultMsg += "\t {msg}\n".format(msg=warningMsg)
+                fileResultMsg += "\n"
+                taintedImport = True
+        if len(successfulImports) > 0:
+            fileResultMsg += (
+                "Los siguientes despachos fueron importados exitosamente:\n"
+            )
+            for successfulDispatch in successfulImports:
+                fileResultMsg += " - {dispatchID}:\n".format(
+                    dispatchID=successfulDispatch[0].id
+                )
+                fileResultMsg += "\n"
+
+        finalReport += fileResultMsg
+    if taintedImport:
+        finalReport += "Puedes responder a este correo adjuntando un archivo de despachos corregido hasta el final del día.\n\n"
+    finalReport += """Gracias por preferir Logica Express!
+    Para cualquier problema, puedes contactarnos a soporte@logicaexpress.cl"""
+    return finalReport

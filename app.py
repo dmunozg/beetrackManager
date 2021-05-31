@@ -1,8 +1,7 @@
 from beetrack.beetrack_api import BeetrackAPI
-from beetrack.beetrack_objects import Item, Dispatch
 from beetrack import xls_import, mail_handler
-from time import sleep
-import os, time, sys
+import os, time, sys, json
+import json, os, time, sys
 import pandas as pd
 
 REQUIRED_ENV_VARIABLES = ["BEETRACK_APIKEY", "IMAP_USER", "IMAP_PASSWD", "IMAP_SERVER"]
@@ -45,15 +44,22 @@ ALLOWED_FILES_EXTENSIONS = [
     "xlsx",
 ]
 # TODO
-# Esto hay que reemplazarlo por una base de datos SQL
+# Esto hay que reemplazarlo por una tabla SQL
 ALLOWED_CLIENTS_DF = pd.DataFrame(
     [
-        ["lkeeler.flipout@gmail.com", "Pruebas", "TEST", "Reibo 3619, Puente Alto"],
+        [
+            "lkeeler.flipout@gmail.com",
+            "Pruebas",
+            "TEST",
+            "Reibo 3619, Puente Alto",
+            True,  # Allow override
+        ],
         [
             "matias@logicaexpress.cl",
             "Pruebas",
             "TEST",
             "Cerro Loma Larga 3610, Puente Alto",
+            True,  # Allow override
         ],
         [
             "carolina.sierra@bbvinos.com",
@@ -68,7 +74,13 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "Las Parcelas 7950, Peñalolen",
         ],
     ],
-    columns=["allowedEmail", "clientName", "codePrefix", "pickupAddress"],
+    columns=[
+        "allowedEmail",
+        "clientName",
+        "codePrefix",
+        "pickupAddress",
+        "allowOverride",
+    ],
 )
 
 
@@ -80,9 +92,30 @@ def check_if_allowed(filename):
         return False
 
 
+def user_overrides(emailAddress):
+    overridesList = (
+        ALLOWED_CLIENTS_DF["allowedEmail"]
+        .where(ALLOWED_CLIENTS_DF["allowOverride"] == True)
+        .dropna()
+        .tolist()
+    )
+    if emailAddress in overridesList:
+        return True
+    else:
+        return False
+
+
+load_dotenv()
+
+
 def main():
     LogicaAPI = BeetrackAPI(os.getenv("BEETRACK_APIKEY"), BASE_URL)
-
+    MailOutbox = mail_handler.SMTPHandler(
+        user=os.getenv("IMAP_USER"),
+        passwd=os.getenv("IMAP_PASSWD"),
+        server=os.getenv("SMTP_SERVER"),
+        port=os.getenv("SMTP_PORT"),
+    )
     MailInbox = mail_handler.Inbox(
         os.getenv("IMAP_USER"), os.getenv("IMAP_PASSWD"), os.getenv("IMAP_SERVER")
     )
@@ -119,7 +152,18 @@ def main():
             .dropna()
             .iloc[0]
         )
+        if user_overrides(email._from):
+            print(
+                "[{timestamp}] Sender can override data. Reading mail body".format(
+                    timestamp=time.strftime("%H:%M:%S")
+                )
+            )
+            print(email.body)
+            allowOverride = True
+        else:
+            allowOverride = False
         timestamp = time.strftime("%H:%M:%S")
+        reports = []
         for attachment in email.attachments:
             if not check_if_allowed(attachment):
                 continue
@@ -131,6 +175,12 @@ def main():
             foundDispatchesData, warnings = xls_import.xlsx_to_dispatches(
                 attachment, clientName, pickupAddress
             )
+            reportData = {
+                "filename": os.path.basename(attachment),
+                "general_issues": warnings,
+                "dispatches": foundDispatchesData,
+            }
+            reports.append(reportData)
             if len(foundDispatchesData) == 0:
                 print(
                     "[{timestamp}] Could not parse any dispatches in file {filename}:".format(
@@ -164,6 +214,16 @@ def main():
                     continue
                 else:
                     response = LogicaAPI.create_dispatch(newDispatch.dump_dict())
+                    if os.getenv("DEBUG"):
+                        with open(
+                            "{id}.json".format(id=newDispatch.id), "w"
+                        ) as jsonFile:
+                            json.dump(
+                                newDispatch.dump_dict(),
+                                jsonFile,
+                                indent=4,
+                                ensure_ascii=False,
+                            )
                     print(response)
                 if errorCode == 1:
                     print(
@@ -184,6 +244,18 @@ def main():
                     )
                 else:
                     print("CRITICAL: Unknown error code.")
+        print(
+            "[{timestamp}] Sending transactional email to {recipient}".format(
+                timestamp=time.strftime("%H:%M:%S"), recipient=email._from
+            ),
+        )
+        mail_handler.send_confirmation_mail(
+            reports,
+            _from=os.getenv("IMAP_USER"),
+            to=email._from,
+            subject=email.subject,
+            outboxHandler=MailOutbox,
+        )
         email.mark_read()
     MailInbox.logout()
     print(
