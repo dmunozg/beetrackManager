@@ -58,7 +58,7 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "matias@logicaexpress.cl",
             "Pruebas",
             "TEST",
-            "Cerro Loma Larga 3610, Puente Alto",
+            "Cerro Loma Larga 3624, Puente Alto",
             True,  # Allow override
         ],
         [
@@ -66,12 +66,14 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "BBVinos",
             "BBV1",
             "Las Parcelas 7950, Peñalolen",
+            False,
         ],
         [
             "rodrigo.curihuentro@bbvinos.com",
             "BBVinos",
             "BBV1",
             "Las Parcelas 7950, Peñalolen",
+            False,
         ],
     ],
     columns=[
