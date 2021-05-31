@@ -37,6 +37,7 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
         elif not isinstance(cell.value, str):
             errorCode = 2
             warningList.append("Crítico: El código debe ser alfanumérico.")
+            return "FAIL"
         else:
             return cell.value
 
