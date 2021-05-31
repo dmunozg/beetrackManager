@@ -55,6 +55,18 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "TEST",
             "Cerro Loma Larga 3610, Puente Alto",
         ],
+        [
+            "carolina.sierra@bbvinos.com",
+            "BBVinos",
+            "BBV1",
+            "Las Parcelas 7950, Peñalolen",
+        ],
+        [
+            "rodrigo.curihuentro@bbvinos.com",
+            "BBVinos",
+            "BBV1",
+            "Las Parcelas 7950, Peñalolen",
+        ],
     ],
     columns=["allowedEmail", "clientName", "codePrefix", "pickupAddress"],
 )
