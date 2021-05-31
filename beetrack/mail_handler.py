@@ -1,4 +1,5 @@
 import imaplib, email, os, re, time, sys
+import smtplib, ssl
 from pathlib import Path
 from copy import copy
 
@@ -130,7 +131,11 @@ class Inbox:
                         pass
                     if "attachment" in content_disposition:
                         # download attachment
-                        filename = part.get_filename()
+                        filename, encoding = email.header.decode_header(
+                            part.get_filename()
+                        )[0]
+                        if encoding is not None:
+                            filename = filename.decode(encoding)
                         if filename:
                             year_month = time.strftime("%Y-%m")
                             day = time.strftime("%d-%a")
@@ -156,3 +161,25 @@ class Inbox:
                 file=sys.stdout,
             )
         return foundEmails
+
+
+class SMTPHandler:
+    def __init__(self, user: str, passwd: str, server: str, port: int = 465) -> None:
+        self.user = user
+        self.passwd = passwd
+        self.server = server
+        self.port = port
+
+    def send_text_mail(self, mail: Email):
+        message = """\
+            Subject: {subject}
+            
+            {body}""".format(
+            subject=mail.subject, body=mail.body
+        )
+        SSLContext = ssl.create_default_context()
+        with smtplib.SMTP_SSL(
+            self.server, self.port, context=SSLContext
+        ) as smtpConnection:
+            smtpConnection.login(self.user, self.passwd)
+            smtpConnection.sendmail(mail._from, mail.recipient, message)
