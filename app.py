@@ -125,7 +125,7 @@ def main():
                 continue
             else:
                 print(
-                    f"[{timestamp}] Will scan file for dispatches for client {clientName} to be picked up from {pickupAddress}",
+                    f"[{timestamp}] Will scan file {os.path.basename(attachment)} for dispatches for client {clientName} to be picked up from {pickupAddress}",
                     file=sys.stdout,
                 )
             foundDispatchesData, warnings = xls_import.xlsx_to_dispatches(
