@@ -48,7 +48,7 @@ for env in REQUIRED_ENV_VARIABLES:
 
 BASE_URL = "https://app.beetrack.com/api/external/v1"
 ALLOWED_FILES_EXTENSIONS = [
-    "xlsx",
+    "XLSX",
 ]
 # TODO
 # Esto hay que reemplazarlo por una tabla SQL
@@ -232,7 +232,7 @@ parsersDict = {
 
 def check_if_allowed(filename):
     extension = filename.split(".")[-1]
-    if extension in ALLOWED_FILES_EXTENSIONS:
+    if extension.upper() in ALLOWED_FILES_EXTENSIONS:
         return True
     else:
         return False
@@ -255,7 +255,8 @@ def user_overrides(emailAddress):
         .dropna()
         .tolist()
     )
-    if emailAddress in overridesList:
+    overridesList = [mail.upper() for mail in overridesList]
+    if emailAddress.upper() in overridesList:
         return True
     else:
         return False
