@@ -214,7 +214,7 @@ def xlsx_to_dispatches(xlsxFilename, client, pickupAddress):
         )
         return (foundDispatches, warningSet)
     dispatchesSheet = xlsxData.active
-    for row in dispatchesSheet.iter_rows(min_row=2, max_col=17):
+    for row in dispatchesSheet.iter_rows(min_row=1, max_col=17):
         # Omitir la fila si está vacía
         if not any(cell.value for cell in row):
             continue
