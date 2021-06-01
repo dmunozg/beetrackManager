@@ -344,7 +344,7 @@ def main():
                 .dropna()
             )
             if len(customParserQuery) > 0:
-                chosenParser = parsersDict[customParserQuery[0]]
+                chosenParser = parsersDict[customParserQuery.iloc[0]]
             else:
                 chosenParser = parsersDict["default"]
             foundDispatchesData, warnings = chosenParser(
