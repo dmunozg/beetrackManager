@@ -66,6 +66,7 @@ class Dispatch:
         additionalDocument=None,
         priority=0,  # 0 = Normal, 1 = Urgente
         maxDeliveryTime=None,
+        minDeliveryTime=None,
         items=[],
         client=None,
         mode=2,
@@ -78,6 +79,7 @@ class Dispatch:
             self.contactPhone = dispatchDict["contact_phone"]
             self.contactID = dispatchDict["contact_id"]
             self.contactEmail = dispatchDict["contact_email"]
+            self.mindeliveryTime = dispatchDict["min_delivery_time"]
             # Iterar sobre tags:
             self.client = None
             self.contactComment = None
@@ -154,6 +156,7 @@ class Dispatch:
                 )
                 self.priority = 0
             self.maxDeliveryTime = maxDeliveryTime
+            self.mindeliveryTime = minDeliveryTime
             self.items = items
             self.client = client
             self.mode = mode

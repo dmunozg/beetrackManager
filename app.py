@@ -60,6 +60,7 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "TEST",
             "Reibo 3619, Puente Alto",
             True,  # Allow override
+            None,  # Custom Parser
         ],
         [
             "matias@logicaexpress.cl",
@@ -67,6 +68,7 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "TEST",
             "Cerro Loma Larga 3624, Puente Alto",
             True,  # Allow override
+            None,  # Custom Parser
         ],
         [
             "carolina.sierra@bbvinos.com",
@@ -74,6 +76,7 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "BBV1",
             "Las Parcelas 7950, Peñalolen",
             False,
+            "BBVinosParser",
         ],
         [
             "rodrigo.curihuentro@bbvinos.com",
@@ -81,6 +84,7 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "BBV1",
             "Las Parcelas 7950, Peñalolen",
             False,
+            "BBVinosParser",
         ],
     ],
     columns=[
@@ -89,8 +93,13 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
         "codePrefix",
         "pickupAddress",
         "allowOverride",
+        "customParser",
     ],
 )
+parsersDict = {
+    "default": xls_import.xlsx_to_dispatches,
+    "BBVinosParser": xls_import.bbvinos_xlsx_to_dispatches,
+}
 
 
 def check_if_allowed(filename):
@@ -189,7 +198,17 @@ def main():
                     f"[{timestamp}] Will scan file {os.path.basename(attachment)} for dispatches for client {clientName} to be picked up from {pickupAddress}",
                     file=sys.stdout,
                 )
-            foundDispatchesData, warnings = xls_import.xlsx_to_dispatches(
+            # Verificar si hay que usar un parser Custom
+            customParserQuery = (
+                ALLOWED_CLIENTS_DF["customParser"]
+                .where(ALLOWED_CLIENTS_DF["allowedEmail"] == email._from)
+                .dropna()
+            )
+            if len(customParserQuery) > 0:
+                chosenParser = parsersDict[customParserQuery[0]]
+            else:
+                chosenParser = parsersDict["default"]
+            foundDispatchesData, warnings = chosenParser(
                 attachment, clientName, pickupAddress
             )
             reportData = {

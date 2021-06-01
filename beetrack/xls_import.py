@@ -71,7 +71,7 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
         if cell.value == None:
             errorCode = 1 if errorCode != 2 else 2
             warningList.append(
-                "Advertencia: No se especificó un número de bultos. Se dejará en 0 si no se corrige"
+                "No se especificó un número de bultos. Se dejará en 0 si no se corrige"
             )
             _itemQuantity = 0
         elif type(cell.value) != int:
@@ -79,19 +79,17 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
                 _itemQuantity = int(cell.value)
                 errorCode = 1 if errorCode != 2 else 2
                 warningList.append(
-                    "Advertencia: El número de bultos debe ser un valor entero. Se registraron {} bulto(s)".format(
+                    "El número de bultos debe ser un valor entero. Se registraron {} bulto(s)".format(
                         _itemQuantity
                     )
                 )
             except ValueError:
                 errorCode = 2
-                warningList.append(
-                    "Crítico: El número de bultos debe ser un valor entero."
-                )
+                warningList.append("El número de bultos debe ser un valor entero.")
                 _itemQuantity = None
         elif cell.value < 0:
             errorCode = 2
-            warningList.append("Crítico: El número de bultos no puede ser negativo.")
+            warningList.append("El número de bultos no puede ser negativo.")
             _itemQuantity = None
         else:
             _itemQuantity = cell.value
@@ -102,19 +100,19 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
         if cell.value == None:
             errorCode = 1 if errorCode != 2 else 2
             warningList.append(
-                "Advertencia: No se especificó un tipo de transporte. Se dejará como Last Mile si no se corrige."
+                "No se especificó un tipo de transporte. Se dejará como Last Mile si no se corrige."
             )
             _transportType = 0
         elif type(cell.value) != str:
             errorCode = 1 if errorCode != 2 else 2
             warningList.append(
-                "Advertencia: No se pudo interpretar el tipo de transporte. Verifique si la casilla está en formato de texto. Se dejará como Last Mile si no se corrige."
+                "No se pudo interpretar el tipo de transporte. Verifique si la casilla está en formato de texto. Se dejará como Last Mile si no se corrige."
             )
             _transportType = 0
         elif cell.value.upper() not in dispatchTypeDict.keys():
             errorCode = 1 if errorCode != 2 else 2
             warningList.append(
-                'Advertencia: "{}" no se reconoce como un tipo de transporte. Se dejará como Last Mile si no se corrige'.format(
+                '"{}" no se reconoce como un tipo de transporte. Se dejará como Last Mile si no se corrige'.format(
                     cell.value
                 )
             )
@@ -134,13 +132,13 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
         elif type(cell.value) != str:
             errorCode = 1 if errorCode != 2 else 2
             warningList.append(
-                "Advertencia: No se reconoce la prioridad. Se dejará normal si no se corrige."
+                "No se reconoce la prioridad indicada. Se dejará normal si no se corrige."
             )
             _priority = 0
         elif cell.value.upper() not in dispatchPriorityDict.keys():
             errorCode = 1 if errorCode != 2 else 2
             warningList.append(
-                f'Advertencia: No se reconoce "{cell.value}" como prioridad. Se dejará normal si no se corrige.'
+                f'No se reconoce "{cell.value}" como prioridad. Se dejará normal si no se corrige.'
             )
             _priority = 0
         else:
@@ -205,7 +203,9 @@ def xlsx_to_dispatches(xlsxFilename, client, pickupAddress):
     try:
         xlsxData = openpyxl.load_workbook(xlsxFilename, data_only=True, read_only=True)
     except:
-        warningSet.add("No fue posible abrir el archivo .xlsx. Posiblemente corrupto.")
+        warningSet.add(
+            "No fue posible abrir el archivo .xlsx, posiblemente corrupto. Verifique que puede abrirlo con Excel y envíelo denuevo."
+        )
         return (foundDispatches, warningSet)
     dispatchesSheet = xlsxData.active
     for row in dispatchesSheet.iter_rows(min_row=2, max_col=17):
@@ -215,7 +215,7 @@ def xlsx_to_dispatches(xlsxFilename, client, pickupAddress):
         # Revisar si la fila tiene un código de despacho, omitir la fila si no lo tiene.
         elif row[0].value == None:
             warningSet.add(
-                "Se encontraron filas sin código de despacho que fueron omitidas."
+                "Se encontraron filas sin código de despacho que fueron omitidas. Todos los despachos deben incluir uno."
             )
             continue
         elif not isinstance(row[0].value, str):
@@ -224,3 +224,216 @@ def xlsx_to_dispatches(xlsxFilename, client, pickupAddress):
         else:
             foundDispatches.append(excelrow_to_dispatch(row, client, pickupAddress))
     return (foundDispatches, warningSet)
+
+
+def bbvinos_xlsx_to_dispatches(xlsxFilename, client, pickupAddress):
+    warningSet = set()
+    foundDispatches = []
+    try:
+        xlsxData = openpyxl.load_workbook(xlsxFilename, data_only=True, read_only=True)
+    except:
+        warningSet.add(
+            "No fue posible abrir el archivo .xlsx, posiblemente corrupto. Verifique que puede abrirlo con Excel y envíelo denuevo."
+        )
+        return (foundDispatches, warningSet)
+    dispatchesSheet = xlsxData.active
+    for row in dispatchesSheet.iter_rows(min_row=3, max_col=18):
+        # Omitir la fila si está vacía
+        if not any(cell.value for cell in row):
+            continue
+        # Revisar si la fila tiene un código de despacho, omitir la fila si no lo tiene.
+        elif row[1].value == None:
+            warningSet.add(
+                "Se encontraron filas sin código de despacho que fueron omitidas. Todos los despachos deben incluir uno."
+            )
+            continue
+        elif not isinstance(row[1].value, str):
+            warningSet.add("Se encontraron filas con códigos no-alfanuméricos.")
+            continue
+        else:
+            foundDispatches.append(
+                bbvinos_excelrow_to_dispatch(row, client, pickupAddress)
+            )
+    return (foundDispatches, warningSet)
+
+
+def bbvinos_excelrow_to_dispatch(excelRow, client, pickupAddress):
+    """ Toma una fila de celdas excel con datos de despacho (en forma de tupla de celdas) y genera un objeto Dispatch a partir de este.
+    La función devuelve una tupla con:
+    (Dispatch resultante, código de error, lista de observaciones)
+    
+    el código de error será:
+    0 : Sin errores
+    1 : Errores no críticos
+    2 : Errores críticos. Se devuelve un Dispatch=None en este caso
+    
+    la lista de observaciones será una lista de str con la información erronea o faltante del despacho ingresado."""
+    warningList = []  # Lista de observaciones
+    errorCode = 0
+    # Validadores
+    def _validate_ID(cell):
+        nonlocal errorCode
+        if cell.value == None:
+            errorCode = 2
+            warningList.append("Crítico: No puede haber un despacho sin código.")
+            return "NONE"
+        elif not isinstance(cell.value, str):
+            errorCode = 2
+            warningList.append("Crítico: El código debe ser alfanumérico.")
+            return "FAIL"
+        else:
+            return cell.value
+
+    def _validate_document_type(cell):
+        nonlocal errorCode
+        if cell.value in documentTypeDict.keys():
+            _documentType = documentTypeDict[cell.value]
+        elif cell.value == None:
+            errorCode = 1 if errorCode != 2 else 2
+        else:
+            errorCode = 1 if errorCode != 2 else 2
+            warningList.append(
+                'No se reconoce el tipo de documento "{}". Se dejará como "Otro" si no se corrige.'.format(
+                    cell.value
+                )
+            )
+            _documentType = "O"
+        return _documentType
+
+    def _validate_document_number(cell, docType):
+        nonlocal errorCode
+        if docType != "ND":
+            _documentNumber = f"{docType} {cell.value}"
+        else:
+            _documentNumber = docType
+        return _documentNumber
+
+    def _validate_item_quantity(cell):
+        nonlocal errorCode
+        if cell.value == None:
+            errorCode = 1 if errorCode != 2 else 2
+            warningList.append(
+                "No se especificó un número de bultos. Se dejará en 0 si no se corrige"
+            )
+            _itemQuantity = 0
+        elif type(cell.value) != int:
+            try:
+                _itemQuantity = int(cell.value)
+                errorCode = 1 if errorCode != 2 else 2
+                warningList.append(
+                    "El número de bultos debe ser un valor entero. Se registraron {} bulto(s)".format(
+                        _itemQuantity
+                    )
+                )
+            except ValueError:
+                errorCode = 2
+                warningList.append("El número de bultos debe ser un valor entero.")
+                _itemQuantity = None
+        elif cell.value < 0:
+            errorCode = 2
+            warningList.append("El número de bultos no puede ser negativo.")
+            _itemQuantity = None
+        else:
+            _itemQuantity = cell.value
+        return _itemQuantity
+
+    def _validate_transport_type(cell):
+        nonlocal errorCode
+        if cell.value == None:
+            errorCode = 1 if errorCode != 2 else 2
+            warningList.append(
+                "No se especificó un tipo de transporte. Se dejará como Last Mile si no se corrige."
+            )
+            _transportType = 0
+        elif type(cell.value) != str:
+            errorCode = 1 if errorCode != 2 else 2
+            warningList.append(
+                "No se pudo interpretar el tipo de transporte. Verifique si la casilla está en formato de texto. Se dejará como Last Mile si no se corrige."
+            )
+            _transportType = 0
+        elif cell.value.upper() not in dispatchTypeDict.keys():
+            errorCode = 1 if errorCode != 2 else 2
+            warningList.append(
+                '"{}" no se reconoce como un tipo de transporte. Se dejará como Last Mile si no se corrige'.format(
+                    cell.value
+                )
+            )
+            _transportType = 0
+        else:
+            _transportType = dispatchTypeDict[cell.value.upper()]
+        return _transportType
+
+    def _validate_contact_address(cell1, cell2):
+        nonlocal errorCode
+        return f"{cell1.value}, {cell2.value}"
+
+    def _validate_priority(cell):
+        nonlocal errorCode
+        if cell.value == None:
+            _priority = 0
+        elif type(cell.value) != str:
+            errorCode = 1 if errorCode != 2 else 2
+            warningList.append(
+                "No se reconoce la prioridad indicada. Se dejará normal si no se corrige."
+            )
+            _priority = 0
+        elif cell.value.upper() not in dispatchPriorityDict.keys():
+            errorCode = 1 if errorCode != 2 else 2
+            warningList.append(
+                f'No se reconoce "{cell.value}" como prioridad. Se dejará normal si no se corrige.'
+            )
+            _priority = 0
+        else:
+            _priority = dispatchPriorityDict[cell.value.upper()]
+        return _priority
+
+    # Importar cada celda
+    dispatchID = _validate_ID(excelRow[1])
+    documentType = _validate_document_type(excelRow[2])
+    documentNumber = _validate_document_number(excelRow[3], documentType)
+    additionalDocument = excelRow[4].value
+    itemDescription = excelRow[5].value
+    itemQuantity = _validate_item_quantity(excelRow[6])
+    transportType = _validate_transport_type(excelRow[7])
+    contactName = excelRow[8].value
+    contactPhone = excelRow[9].value
+    contactEmail = excelRow[10].value
+    contactAddress = _validate_contact_address(excelRow[11], excelRow[12])
+    contactComment = excelRow[13].value
+    maxDeliveryTime = excelRow[14].value
+    priority = _validate_priority(excelRow[15])
+    firstMileTransporter = excelRow[16].value
+    contactID = excelRow[17].value
+    # Si el despacho es First Mile la dirección debe ser la dirección del transporte, y el destinatario debe ir en firstMileDestination
+    if transportType == 1:
+        firstMileDestination = contactAddress
+        contactAddress = firstMileTransporter
+    else:
+        firstMileDestination = None
+    # Generar el output sólo si no hubieron errores críticos
+    if errorCode == 2:
+        resultingDispatch = dispatchID
+    else:
+        # Generar el objeto Item que describe los bultos
+        resultingItem = Item(
+            description=itemDescription, quantity=itemQuantity, code=documentNumber
+        )
+        # Generara el objeto Dispatch
+        resultingDispatch = Dispatch(
+            dispatchID,
+            contactName=contactName,
+            contactAddress=contactAddress,
+            contactPhone=contactPhone,
+            contactEmail=contactEmail,
+            contactID=contactID,
+            contactComment=contactComment,
+            priority=priority,
+            maxDeliveryTime=maxDeliveryTime,
+            dispatchType=transportType,
+            client=client,
+            firstMileDestination=firstMileDestination,
+            pickupAddress=pickupAddress,
+            items=[resultingItem],
+            additionalDocument=additionalDocument,
+        )
+    return (resultingDispatch, errorCode, warningList)
