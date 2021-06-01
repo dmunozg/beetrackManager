@@ -48,10 +48,16 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
             _documentType = documentTypeDict[cell.value]
         elif cell.value == None:
             errorCode = 1 if errorCode != 2 else 2
+            _documentType = "O"
+            warningList.append(
+                'No se especificó un tipo de documento. Se dejará como "Otro" si no se corrige.'.format(
+                    cell.value
+                )
+            )
         else:
             errorCode = 1 if errorCode != 2 else 2
             warningList.append(
-                'Error: No se reconoce el tipo de documento "{}". Se dejará como "Otro" si no se corrige.'.format(
+                'No se reconoce el tipo de documento "{}". Se dejará como "Otro" si no se corrige.'.format(
                     cell.value
                 )
             )
