@@ -150,6 +150,70 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             False,
             None,
         ],
+        [
+            "javicaceres1831@gmail.com",
+            "Bianca Rose Boutique",
+            "BRB1",
+            "Primo de Rivera 501, Maipu",
+            False,
+            None,
+        ],
+        [
+            "Javieracastillocampos@hotmail.cl",
+            "Arenas Cat",
+            "ARC1",
+            "Pasaje Padre Abdón Cifuentes 3312, Puente Alto",
+            False,
+            None,
+        ],
+        [
+            "arenascatsantiago@gmail.com",
+            "Arenas Cat",
+            "ARC1",
+            "Pasaje Padre Abdón Cifuentes 3312, Puente Alto",
+            False,
+            None,
+        ],
+        [
+            "alan.saul.aravena@gmail.com",
+            "Arenas Cat",
+            "ARC1",
+            "Pasaje Padre Abdón Cifuentes 3312, Puente Alto",
+            False,
+            None,
+        ],
+        [
+            "cbarrientos@tslcargo.cl",
+            "TSL Group Cargo SpA",
+            "TSL1",
+            "Armando Cortinez Oriente 945, Pudahuel",
+            False,
+            None,
+        ],
+        [
+            "bgonzalez@tslcargo.cl",
+            "TSL Group Cargo SpA",
+            "TSL1",
+            "Armando Cortinez Oriente 945, Pudahuel",
+            False,
+            None,
+        ],
+        [
+            "cekuatro@gmail.com",
+            "TSL Group Cargo SpA",
+            "TSL1",
+            "Armando Cortinez Oriente 945, Pudahuel",
+            False,
+            None,
+        ],
+        [
+            "hgomez@axiomatix.cl",
+            "Axiomatix SpA",
+            "AXI1",
+            "Fukui 6828, La Florida",
+            False,
+            None,
+        ],
     ],
     columns=[
         "allowedEmail",
@@ -169,6 +233,16 @@ parsersDict = {
 def check_if_allowed(filename):
     extension = filename.split(".")[-1]
     if extension in ALLOWED_FILES_EXTENSIONS:
+        return True
+    else:
+        return False
+
+
+def email_in_database(emailAddress: str) -> bool:
+    allowedEmailList = [
+        mail.upper() for mail in ALLOWED_CLIENTS_DF["allowedEmail"].to_list()
+    ]
+    if emailAddress.upper() in allowedEmailList:
         return True
     else:
         return False
@@ -206,7 +280,7 @@ def main():
         MailInbox.logout()
         return 0
     for email in fetchedEmails:
-        if email._from in ALLOWED_CLIENTS_DF["allowedEmail"].to_list():
+        if email_in_database(email._from):
             timestamp = time.strftime("%H:%M:%S")
             print(
                 f"[{timestamp}] MailID {email.id} found from allowed client: {email._from}"
