@@ -432,6 +432,13 @@ def main():
             outboxHandler=MailOutbox,
             replyingTo=email.emailObject,
         )
+        mail_handler.send_confirmation_mail(
+            reports,
+            _from=os.getenv("IMAP_USER"),
+            to="matias@logicaexpress.cl",
+            subject="El cliente {} añadió despachos al sistema.".format(clientName),
+            outboxHandler=MailOutbox,
+        )
         email.mark_read()
     MailInbox.logout()
     print(

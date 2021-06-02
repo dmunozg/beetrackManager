@@ -46,7 +46,7 @@ class Email:
     def read_overrides(self, clientDF: pd.DataFrame) -> dict:
         overrides = {"Cliente": None, "pickup_address": None}
         clientPattern = re.compile(r"Cliente:([\ \w]+)")
-        pAddressPattern = re.compile(r"Recogida:([\ \w]+)")
+        pAddressPattern = re.compile(r"Dirección:([\ \w]+)")
         if clientPattern.findall(self.body):
             overrides["Cliente"] = clientPattern.findall(self.body)[0].strip()
         if pAddressPattern.findall(self.body):
@@ -224,16 +224,12 @@ class SMTPHandler:
         message["To"] = mail.recipient
         message.set_content(mail.body)
         SSLContext = ssl.create_default_context()
-        if mail.recipient.upper() != "MATIAS@LOGICAEXPRESS.CL":
-            recipients = [mail.recipient, "matias@logicaexpress.cl"]
-        else:
-            recipients = mail.recipient
         with smtplib.SMTP_SSL(
             self.server, self.port, context=SSLContext
         ) as smtpConnection:
             smtpConnection.login(self.user, self.passwd)
             response = smtpConnection.sendmail(
-                mail._from, recipients, message.as_string()
+                mail._from, mail.recipient, message.as_string()
             )
         return response
 
