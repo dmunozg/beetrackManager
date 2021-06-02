@@ -83,12 +83,13 @@ def excelrow_to_dispatch(excelRow, client, pickupAddress):
         elif type(cell.value) != int:
             try:
                 _itemQuantity = int(cell.value)
-                errorCode = 1 if errorCode != 2 else 2
-                warningList.append(
-                    "El número de bultos debe ser un valor entero. Se registraron {} bulto(s)".format(
-                        _itemQuantity
+                if cell.value % 1 != 0:
+                    errorCode = 1 if errorCode != 2 else 2
+                    warningList.append(
+                        "El número de bultos debe ser un valor entero. Se registraron {} bulto(s)".format(
+                            _itemQuantity
+                        )
                     )
-                )
             except ValueError:
                 errorCode = 2
                 warningList.append("El número de bultos debe ser un valor entero.")
@@ -325,12 +326,13 @@ def bbvinos_excelrow_to_dispatch(excelRow, client, pickupAddress):
         elif type(cell.value) != int:
             try:
                 _itemQuantity = int(cell.value)
-                errorCode = 1 if errorCode != 2 else 2
-                warningList.append(
-                    "El número de bultos debe ser un valor entero. Se registraron {} bulto(s)".format(
-                        _itemQuantity
+                if cell.value % 1 != 0:
+                    errorCode = 1 if errorCode != 2 else 2
+                    warningList.append(
+                        "El número de bultos debe ser un valor entero. Se registraron {} bulto(s)".format(
+                            _itemQuantity
+                        )
                     )
-                )
             except ValueError:
                 errorCode = 2
                 warningList.append("El número de bultos debe ser un valor entero.")
