@@ -314,6 +314,7 @@ def build_text_report(reportRawData: list) -> str:
         finalReport += fileResultMsg
     if taintedImport:
         finalReport += "Puedes responder a este correo adjuntando un archivo de despachos corregido hasta el final del día.\n\n"
+    finalReport += "Recuerda que puedes revisar el estado de tus depachos en www.logicaexpress.cl\n\n"
     finalReport += """Gracias por preferir Logica Express!
     Para cualquier problema, puedes contactarnos a soporte@logicaexpress.cl"""
     return finalReport
