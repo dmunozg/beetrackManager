@@ -243,7 +243,7 @@ def send_confirmation_mail(
     replyingTo=None,
 ) -> bool:
     transactionEmail = Email(
-        id=99, subject="Re:{subject}".format(subject=subject), _from=_from, recipient=to
+        id=99, subject="{subject}".format(subject=subject), _from=_from, recipient=to
     )
     transactionEmail.body = build_text_report(reportData)
     print(outboxHandler.send_text_mail(transactionEmail, replyingTo))
