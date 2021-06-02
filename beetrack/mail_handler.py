@@ -224,12 +224,16 @@ class SMTPHandler:
         message["To"] = mail.recipient
         message.set_content(mail.body)
         SSLContext = ssl.create_default_context()
+        if mail.recipient.upper() != "MATIAS@LOGICAEXPRESS.CL":
+            recipients = [mail.recipient, "matias@logicaexpress.cl"]
+        else:
+            recipients = mail.recipient
         with smtplib.SMTP_SSL(
             self.server, self.port, context=SSLContext
         ) as smtpConnection:
             smtpConnection.login(self.user, self.passwd)
             response = smtpConnection.sendmail(
-                mail._from, mail.recipient, message.as_string()
+                mail._from, recipients, message.as_string()
             )
         return response
 
