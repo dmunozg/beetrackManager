@@ -297,6 +297,10 @@ def bbvinos_excelrow_to_dispatch(excelRow, client, pickupAddress):
             _documentType = documentTypeDict[cell.value]
         elif cell.value == None:
             errorCode = 1 if errorCode != 2 else 2
+            warningList.append(
+                "No se especificó un tipo de documento, se dejará como 'Otro'"
+            )
+            _documentType = "O"
         else:
             errorCode = 1 if errorCode != 2 else 2
             warningList.append(
