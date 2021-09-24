@@ -95,6 +95,14 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "BBVinosParser",
         ],
         [
+            "comercial@bbvinos.com",
+            "BBVinos",
+            "BBV1",
+            "Las Parcelas 7950, Peñalolen",
+            False,
+            "BBVinosParser",
+        ],
+        [
             "bodega-cl@prominent.com",
             "Prominent SpA",
             "PROM",
