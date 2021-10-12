@@ -1,0 +1,10 @@
+name: LogicaMain
+channels:
+  - defaults
+dependencies:
+  - python-dotenv
+  - pandas
+  - requests
+  - openpyxl
+  - ipython
+prefix: /home/dmunozg/miniconda3/envs/LogicaMain
