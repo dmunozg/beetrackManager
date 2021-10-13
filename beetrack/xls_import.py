@@ -15,437 +15,298 @@ dispatchTypeDict = {"LAST MILE": 0, "FIRST MILE": 1, "FULFILLMENT": 2}
 dispatchPriorityDict = {"NORMAL": 0, "URGENTE": 1}
 
 
-def excelrow_to_dispatch(excelRow, client, pickupAddress):
-    """ Toma una fila de celdas excel con datos de despacho (en forma de tupla de celdas) y genera un objeto Dispatch a partir de este.
-    La función devuelve una tupla con:
-    (Dispatch resultante, código de error, lista de observaciones)
-    
-    el código de error será:
-    0 : Sin errores
-    1 : Errores no críticos
-    2 : Errores críticos. Se devuelve un Dispatch=None en este caso
-    
-    la lista de observaciones será una lista de str con la información erronea o faltante del despacho ingresado."""
-    warningList = []  # Lista de observaciones
+class defaultRowParser:
+    resultingDispatch = None
+    warningList = []
     errorCode = 0
+
+    def __init__(self, excelRow, client, pickupAddress):
+        self.excelRow = excelRow
+        self.client = client
+        self.pickupAddress = pickupAddress
+
     # Validadores
-    def _validate_ID(cell):
-        nonlocal errorCode
+    def validate_ID(self, cell):
         if cell.value == None:
-            errorCode = 2
-            warningList.append("Crítico: No puede haber un despacho sin código.")
+            self.errorCode = 2
+            self.warningList.append("Crítico: No puede haber un despacho sin código.")
             return "NONE"
         elif not isinstance(cell.value, str):
-            errorCode = 2
-            warningList.append("Crítico: El código debe ser alfanumérico.")
+            self.errorCode = 2
+            self.warningList.append("Crítico: El código debe ser alfanumérico.")
             return "FAIL"
         else:
             return cell.value
 
-    def _validate_document_type(cell):
-        nonlocal errorCode
+    def validate_document_type(self, cell):
         if cell.value in documentTypeDict.keys():
-            _documentType = documentTypeDict[cell.value]
+            documentType = documentTypeDict[cell.value]
         elif cell.value == None:
-            errorCode = 1 if errorCode != 2 else 2
-            _documentType = "O"
-            warningList.append(
+            self.errorCode = 1 if self.errorCode != 2 else 2
+            documentType = "O"
+            self.warningList.append(
                 'No se especificó un tipo de documento. Se dejará como "Otro" si no se corrige.'.format(
                     cell.value
                 )
             )
         else:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
+            self.errorCode = 1 if self.errorCode != 2 else 2
+            self.warningList.append(
                 'No se reconoce el tipo de documento "{}". Se dejará como "Otro" si no se corrige.'.format(
                     cell.value
                 )
             )
-            _documentType = "O"
-        return _documentType
+            documentType = "O"
+        return documentType
 
-    def _validate_document_number(cell, docType):
-        nonlocal errorCode
+    def validate_document_number(self, cell, docType):
         if docType != "ND":
-            _documentNumber = f"{docType} {cell.value}"
+            documentNumber = f"{docType} {cell.value}"
         else:
-            _documentNumber = docType
-        return _documentNumber
+            documentNumber = docType
+        return documentNumber
 
-    def _validate_item_quantity(cell):
-        nonlocal errorCode
+    def validate_item_quantity(self, cell):
         if cell.value == None:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
+            self.errorCode = 1 if self.errorCode != 2 else 2
+            self.warningList.append(
                 "No se especificó un número de bultos. Se dejará en 0 si no se corrige"
             )
-            _itemQuantity = 0
+            itemQuantity = 0
         elif type(cell.value) != int:
             try:
-                _itemQuantity = int(cell.value)
+                itemQuantity = int(cell.value)
                 if cell.value % 1 != 0:
-                    errorCode = 1 if errorCode != 2 else 2
-                    warningList.append(
+                    self.errorCode = 1 if self.errorCode != 2 else 2
+                    self.warningList.append(
                         "El número de bultos debe ser un valor entero. Se registraron {} bulto(s)".format(
-                            _itemQuantity
+                            itemQuantity
                         )
                     )
             except ValueError:
-                errorCode = 2
-                warningList.append("El número de bultos debe ser un valor entero.")
-                _itemQuantity = None
+                self.errorCode = 2
+                self.warningList.append("El número de bultos debe ser un valor entero.")
+                itemQuantity = None
         elif cell.value < 0:
-            errorCode = 2
-            warningList.append("El número de bultos no puede ser negativo.")
-            _itemQuantity = None
+            self.errorCode = 2
+            self.warningList.append("El número de bultos no puede ser negativo.")
+            itemQuantity = None
         else:
-            _itemQuantity = cell.value
-        return _itemQuantity
+            itemQuantity = cell.value
+        return itemQuantity
 
-    def _validate_transport_type(cell):
-        nonlocal errorCode
+    def validate_transport_type(self, cell):
         if cell.value == None:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
+            self.errorCode = 1 if self.errorCode != 2 else 2
+            self.warningList.append(
                 "No se especificó un tipo de transporte. Se dejará como Last Mile si no se corrige."
             )
-            _transportType = 0
+            transportType = 0
         elif type(cell.value) != str:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
+            self.errorCode = 1 if self.errorCode != 2 else 2
+            self.warningList.append(
                 "No se pudo interpretar el tipo de transporte. Verifique si la casilla está en formato de texto. Se dejará como Last Mile si no se corrige."
             )
-            _transportType = 0
+            transportType = 0
         elif cell.value.upper() not in dispatchTypeDict.keys():
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
+            self.errorCode = 1 if self.errorCode != 2 else 2
+            self.warningList.append(
                 '"{}" no se reconoce como un tipo de transporte. Se dejará como Last Mile si no se corrige'.format(
                     cell.value
                 )
             )
-            _transportType = 0
+            transportType = 0
         else:
-            _transportType = dispatchTypeDict[cell.value.upper()]
-        return _transportType
+            transportType = dispatchTypeDict[cell.value.upper()]
+        return transportType
 
-    def _validate_contact_address(cell1, cell2):
-        nonlocal errorCode
+    def validate_contact_address(self, cell1, cell2):
         return f"{cell1.value}, {cell2.value}"
 
-    def _validate_priority(cell):
-        nonlocal errorCode
+    def validate_priority(self, cell):
         if cell.value == None:
-            _priority = 0
+            priority = 0
         elif type(cell.value) != str:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
+            self.errorCode = 1 if self.errorCode != 2 else 2
+            self.warningList.append(
                 "No se reconoce la prioridad indicada. Se dejará normal si no se corrige."
             )
-            _priority = 0
+            priority = 0
         elif cell.value.upper() not in dispatchPriorityDict.keys():
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
+            self.errorCode = 1 if self.errorCode != 2 else 2
+            self.warningList.append(
                 f'No se reconoce "{cell.value}" como prioridad. Se dejará normal si no se corrige.'
             )
-            _priority = 0
+            priority = 0
         else:
-            _priority = dispatchPriorityDict[cell.value.upper()]
-        return _priority
+            priority = dispatchPriorityDict[cell.value.upper()]
+        return priority
 
-    # Importar cada celda
-    dispatchID = _validate_ID(excelRow[0])
-    documentType = _validate_document_type(excelRow[1])
-    documentNumber = _validate_document_number(excelRow[2], documentType)
-    additionalDocument = excelRow[3].value
-    itemDescription = excelRow[4].value
-    itemQuantity = _validate_item_quantity(excelRow[5])
-    transportType = _validate_transport_type(excelRow[6])
-    contactName = excelRow[7].value
-    contactPhone = excelRow[8].value
-    contactEmail = excelRow[9].value
-    contactAddress = _validate_contact_address(excelRow[10], excelRow[11])
-    contactComment = excelRow[12].value
-    maxDeliveryTime = excelRow[13].value
-    priority = _validate_priority(excelRow[14])
-    firstMileTransporter = excelRow[15].value
-    contactID = excelRow[16].value
-    # Si el despacho es First Mile la dirección debe ser la dirección del transporte, y el destinatario debe ir en firstMileDestination
-    if transportType == 1:
-        firstMileDestination = contactAddress
-        contactAddress = firstMileTransporter
-    else:
-        firstMileDestination = None
-    # Generar el output sólo si no hubieron errores críticos
-    if errorCode == 2:
-        resultingDispatch = dispatchID
-    else:
-        # Generar el objeto Item que describe los bultos
-        resultingItem = Item(
-            description=itemDescription, quantity=itemQuantity, code=documentNumber
+    def parse(self):
+        dispatchID = self.validate_ID(self.excelRow[0])
+        documentType = self.validate_document_type(self.excelRow[1])
+        documentNumber = self.validate_document_number(self.excelRow[2], documentType)
+        additionalDocument = self.excelRow[3].value
+        itemDescription = self.excelRow[4].value
+        itemQuantity = self.validate_item_quantity(self.excelRow[5])
+        transportType = self.validate_transport_type(self.excelRow[6])
+        contactName = self.excelRow[7].value
+        contactPhone = self.excelRow[8].value
+        contactEmail = self.excelRow[9].value
+        contactAddress = self.validate_contact_address(
+            self.excelRow[10], self.excelRow[11]
         )
-        # Generara el objeto Dispatch
-        resultingDispatch = Dispatch(
-            dispatchID,
-            contactName=contactName,
-            contactAddress=contactAddress,
-            contactPhone=contactPhone,
-            contactEmail=contactEmail,
-            contactID=contactID,
-            contactComment=contactComment,
-            priority=priority,
-            maxDeliveryTime=maxDeliveryTime,
-            dispatchType=transportType,
-            client=client,
-            firstMileDestination=firstMileDestination,
-            pickupAddress=pickupAddress,
-            items=[resultingItem],
-            additionalDocument=additionalDocument,
-        )
-    return (resultingDispatch, errorCode, warningList)
+        contactComment = self.excelRow[12].value
+        maxDeliveryTime = self.excelRow[13].value
+        priority = self.validate_priority(self.excelRow[14])
+        firstMileTransporter = self.excelRow[15].value
+        contactID = self.excelRow[16].value
+        # Si el despacho es First Mile la dirección debe ser la dirección del transporte, y el destinatario debe ir en firstMileDestination
+        if transportType == 1:
+            firstMileDestination = contactAddress
+            contactAddress = firstMileTransporter
+        else:
+            firstMileDestination = None
+        # Generar el output sólo si no hubieron errores críticos
+        if self.errorCode == 2:
+            self.resultingDispatch = dispatchID
+            return 1
+        else:
+            # Generar el objeto Item que describe los bultos
+            resultingItem = Item(
+                description=itemDescription, quantity=itemQuantity, code=documentNumber
+            )
+            # Generara el objeto Dispatch
+            self.resultingDispatch = Dispatch(
+                dispatchID,
+                contactName=contactName,
+                contactAddress=contactAddress,
+                contactPhone=contactPhone,
+                contactEmail=contactEmail,
+                contactID=contactID,
+                contactComment=contactComment,
+                priority=priority,
+                maxDeliveryTime=maxDeliveryTime,
+                dispatchType=transportType,
+                client=self.client,
+                firstMileDestination=firstMileDestination,
+                pickupAddress=self.pickupAddress,
+                items=[resultingItem],
+                additionalDocument=additionalDocument,
+            )
+            return 0
 
 
-def xlsx_to_dispatches(xlsxFilename, client, pickupAddress):
+class XlsxParser:
     warningSet = set()
     foundDispatches = []
-    try:
-        xlsxData = openpyxl.load_workbook(xlsxFilename, data_only=True, read_only=True)
-    except:
-        warningSet.add(
-            "No fue posible abrir el archivo .xlsx, posiblemente corrupto. Verifique que puede abrirlo con Excel y envíelo denuevo."
-        )
-        return (foundDispatches, warningSet)
-    dispatchesSheet = xlsxData.active
-    for row in dispatchesSheet.iter_rows(min_row=2, max_col=17):
-        # Omitir la fila si está vacía
-        if not any(cell.value for cell in row):
-            continue
-        # Revisar si la fila tiene un código de despacho, omitir la fila si no lo tiene.
-        elif row[0].value == None:
-            warningSet.add(
-                "Se encontraron filas sin código de despacho que fueron omitidas. Todos los despachos deben incluir uno."
+
+    rowParser = defaultRowParser
+    firstRowToCheck = 2
+    lastColumnToCheck = 17
+    dispatchIDcolumnIndex = 0
+
+    def __init__(self, xlsxFilename, client, pickupAddress):
+        self.xlsxFilename = xlsxFilename
+        self.client = client
+        self.pickupAddress = pickupAddress
+
+    def parse(self):
+        try:
+            xlsxData = openpyxl.load_workbook(
+                self.xlsxFilename, data_only=True, read_only=True
             )
-            continue
-        elif not isinstance(row[0].value, str):
-            warningSet.add("Se encontraron filas con códigos no-alfanuméricos")
-            continue
-        else:
-            foundDispatches.append(excelrow_to_dispatch(row, client, pickupAddress))
-    return (foundDispatches, warningSet)
-
-
-def bbvinos_xlsx_to_dispatches(xlsxFilename, client, pickupAddress):
-    warningSet = set()
-    foundDispatches = []
-    try:
-        xlsxData = openpyxl.load_workbook(xlsxFilename, data_only=True, read_only=True)
-    except:
-        warningSet.add(
-            "No fue posible abrir el archivo .xlsx, posiblemente corrupto. Verifique que puede abrirlo con Excel y envíelo denuevo."
-        )
-        return (foundDispatches, warningSet)
-    dispatchesSheet = xlsxData.active
-    for row in dispatchesSheet.iter_rows(min_row=2, max_col=18):
-        # Omitir la fila si está vacía
-        if not any(cell.value for cell in row):
-            continue
-        # Revisar si la fila tiene un código de despacho, omitir la fila si no lo tiene.
-        elif row[1].value == None:
-            warningSet.add(
-                "Se encontraron filas sin código de despacho que fueron omitidas. Todos los despachos deben incluir uno."
+        except:
+            self.warningSet.add(
+                "No fue posible abrir el archivo .xlsx, posiblemente corrupto. Verifique que puede abrirlo con Excel y envíelo denuevo."
             )
-            continue
-        elif not isinstance(row[1].value, str):
-            warningSet.add("Se encontraron filas con códigos no-alfanuméricos.")
-            continue
-        else:
-            foundDispatches.append(
-                bbvinos_excelrow_to_dispatch(row, client, pickupAddress)
-            )
-    return (foundDispatches, warningSet)
-
-
-def bbvinos_excelrow_to_dispatch(excelRow, client, pickupAddress):
-    """ Toma una fila de celdas excel con datos de despacho (en forma de tupla de celdas) y genera un objeto Dispatch a partir de este.
-    La función devuelve una tupla con:
-    (Dispatch resultante, código de error, lista de observaciones)
-    
-    el código de error será:
-    0 : Sin errores
-    1 : Errores no críticos
-    2 : Errores críticos. Se devuelve un Dispatch=None en este caso
-    
-    la lista de observaciones será una lista de str con la información erronea o faltante del despacho ingresado."""
-    warningList = []  # Lista de observaciones
-    errorCode = 0
-    # Validadores
-    def _validate_ID(cell):
-        nonlocal errorCode
-        if cell.value == None:
-            errorCode = 2
-            warningList.append("Crítico: No puede haber un despacho sin código.")
-            return "NONE"
-        elif not isinstance(cell.value, str):
-            errorCode = 2
-            warningList.append("Crítico: El código debe ser alfanumérico.")
-            return "FAIL"
-        else:
-            return cell.value
-
-    def _validate_document_type(cell):
-        nonlocal errorCode
-        if cell.value in documentTypeDict.keys():
-            _documentType = documentTypeDict[cell.value]
-        elif cell.value == None:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
-                "No se especificó un tipo de documento, se dejará como 'Otro'"
-            )
-            _documentType = "O"
-        else:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
-                'No se reconoce el tipo de documento "{}". Se dejará como "Otro" si no se corrige.'.format(
-                    cell.value
+            return 1
+        dispatchesSheet = xlsxData.active
+        for row in dispatchesSheet.iter_rows(
+            min_row=self.firstRowToCheck, max_col=self.lastColumnToCheck
+        ):
+            # Omitir la fila si está vacía
+            if not any(cell.value for cell in row):
+                continue
+            # Revisar si la fila tiene un código de despacho, omitir la fila si no lo tiene.
+            elif row[self.dispatchIDcolumnIndex].value == None:
+                self.warningSet.add(
+                    "Se encontraron filas sin código de despacho que fueron omitidas. Todos los despachos deben incluir uno."
                 )
-            )
-            _documentType = "O"
-        return _documentType
-
-    def _validate_document_number(cell, docType):
-        nonlocal errorCode
-        if docType != "ND":
-            _documentNumber = f"{docType} {cell.value}"
-        else:
-            _documentNumber = docType
-        return _documentNumber
-
-    def _validate_item_quantity(cell):
-        nonlocal errorCode
-        if cell.value == None:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
-                "No se especificó un número de bultos. Se dejará en 0 si no se corrige"
-            )
-            _itemQuantity = 0
-        elif type(cell.value) != int:
-            try:
-                _itemQuantity = int(cell.value)
-                if cell.value % 1 != 0:
-                    errorCode = 1 if errorCode != 2 else 2
-                    warningList.append(
-                        "El número de bultos debe ser un valor entero. Se registraron {} bulto(s)".format(
-                            _itemQuantity
-                        )
+                continue
+            elif not isinstance(row[self.dispatchIDcolumnIndex].value, str):
+                self.warningSet.add("Se encontraron filas con códigos no-alfanuméricos")
+                continue
+            else:
+                scannedRow = self.rowParser(row, self.client, self.pickupAddress)
+                scannedRow.parse()
+                self.foundDispatches.append(
+                    (
+                        scannedRow.resultingDispatch,
+                        scannedRow.errorCode,
+                        scannedRow.warningList,
                     )
-            except ValueError:
-                errorCode = 2
-                warningList.append("El número de bultos debe ser un valor entero.")
-                _itemQuantity = None
-        elif cell.value < 0:
-            errorCode = 2
-            warningList.append("El número de bultos no puede ser negativo.")
-            _itemQuantity = None
-        else:
-            _itemQuantity = cell.value
-        return _itemQuantity
-
-    def _validate_transport_type(cell):
-        nonlocal errorCode
-        if cell.value == None:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
-                "No se especificó un tipo de transporte. Se dejará como Last Mile si no se corrige."
-            )
-            _transportType = 0
-        elif type(cell.value) != str:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
-                "No se pudo interpretar el tipo de transporte. Verifique si la casilla está en formato de texto. Se dejará como Last Mile si no se corrige."
-            )
-            _transportType = 0
-        elif cell.value.upper() not in dispatchTypeDict.keys():
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
-                '"{}" no se reconoce como un tipo de transporte. Se dejará como Last Mile si no se corrige'.format(
-                    cell.value
                 )
-            )
-            _transportType = 0
-        else:
-            _transportType = dispatchTypeDict[cell.value.upper()]
-        return _transportType
 
-    def _validate_contact_address(cell1, cell2):
-        nonlocal errorCode
-        return f"{cell1.value}, {cell2.value}"
 
-    def _validate_priority(cell):
-        nonlocal errorCode
-        if cell.value == None:
-            _priority = 0
-        elif type(cell.value) != str:
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
-                "No se reconoce la prioridad indicada. Se dejará normal si no se corrige."
-            )
-            _priority = 0
-        elif cell.value.upper() not in dispatchPriorityDict.keys():
-            errorCode = 1 if errorCode != 2 else 2
-            warningList.append(
-                f'No se reconoce "{cell.value}" como prioridad. Se dejará normal si no se corrige.'
-            )
-            _priority = 0
-        else:
-            _priority = dispatchPriorityDict[cell.value.upper()]
-        return _priority
-
-    # Importar cada celda
-    dispatchID = _validate_ID(excelRow[1])
-    documentType = _validate_document_type(excelRow[2])
-    documentNumber = _validate_document_number(excelRow[3], documentType)
-    additionalDocument = excelRow[4].value
-    itemDescription = excelRow[5].value
-    itemQuantity = _validate_item_quantity(excelRow[6])
-    transportType = _validate_transport_type(excelRow[7])
-    contactName = excelRow[8].value
-    contactPhone = excelRow[9].value
-    contactEmail = excelRow[10].value
-    contactAddress = _validate_contact_address(excelRow[11], excelRow[12])
-    contactComment = excelRow[13].value
-    maxDeliveryTime = excelRow[14].value
-    priority = _validate_priority(excelRow[15])
-    firstMileTransporter = excelRow[16].value
-    contactID = excelRow[17].value
-    # Si el despacho es First Mile la dirección debe ser la dirección del transporte, y el destinatario debe ir en firstMileDestination
-    if transportType == 1:
-        firstMileDestination = contactAddress
-        contactAddress = firstMileTransporter
-    else:
-        firstMileDestination = None
-    # Generar el output sólo si no hubieron errores críticos
-    if errorCode == 2:
-        resultingDispatch = dispatchID
-    else:
-        # Generar el objeto Item que describe los bultos
-        resultingItem = Item(
-            description=itemDescription, quantity=itemQuantity, code=documentNumber
+class BbvinosRowParser(defaultRowParser):
+    def parse(self):
+        dispatchID = self.validate_ID(self.excelRow[1])
+        documentType = self.validate_document_type(self.excelRow[2])
+        documentNumber = self.validate_document_number(self.excelRow[3], documentType)
+        additionalDocument = self.excelRow[4].value
+        itemDescription = self.excelRow[5].value
+        itemQuantity = self.validate_item_quantity(self.excelRow[6])
+        transportType = self.validate_transport_type(self.excelRow[7])
+        contactName = self.excelRow[8].value
+        contactPhone = self.excelRow[9].value
+        contactEmail = self.excelRow[10].value
+        contactAddress = self.validate_contact_address(
+            self.excelRow[11], self.excelRow[12]
         )
-        # Generara el objeto Dispatch
-        resultingDispatch = Dispatch(
-            dispatchID,
-            contactName=contactName,
-            contactAddress=contactAddress,
-            contactPhone=contactPhone,
-            contactEmail=contactEmail,
-            contactID=contactID,
-            contactComment=contactComment,
-            priority=priority,
-            maxDeliveryTime=maxDeliveryTime,
-            dispatchType=transportType,
-            client=client,
-            firstMileDestination=firstMileDestination,
-            pickupAddress=pickupAddress,
-            items=[resultingItem],
-            additionalDocument=additionalDocument,
-        )
-    return (resultingDispatch, errorCode, warningList)
+        contactComment = self.excelRow[13].value
+        maxDeliveryTime = self.excelRow[14].value
+        priority = self.validate_priority(self.excelRow[15])
+        firstMileTransporter = self.excelRow[16].value
+        contactID = self.excelRow[17].value
+        # Si el despacho es First Mile la dirección debe ser la dirección del transporte, y el destinatario debe ir en firstMileDestination
+        if transportType == 1:
+            firstMileDestination = contactAddress
+            contactAddress = firstMileTransporter
+        else:
+            firstMileDestination = None
+        # Generar el output sólo si no hubieron errores críticos
+        if self.errorCode == 2:
+            self.resultingDispatch = dispatchID
+            return 1
+        else:
+            # Generar el objeto Item que describe los bultos
+            resultingItem = Item(
+                description=itemDescription, quantity=itemQuantity, code=documentNumber
+            )
+            # Generara el objeto Dispatch
+            self.resultingDispatch = Dispatch(
+                dispatchID,
+                contactName=contactName,
+                contactAddress=contactAddress,
+                contactPhone=contactPhone,
+                contactEmail=contactEmail,
+                contactID=contactID,
+                contactComment=contactComment,
+                priority=priority,
+                maxDeliveryTime=maxDeliveryTime,
+                dispatchType=transportType,
+                client=self.client,
+                firstMileDestination=firstMileDestination,
+                pickupAddress=self.pickupAddress,
+                items=[resultingItem],
+                additionalDocument=additionalDocument,
+            )
+            return 0
+
+
+class BbvinosXlsxParser(XlsxParser):
+    rowParser = BbvinosRowParser
+    firstRowToCheck = 2
+    lastColumnToCheck = 18
+    dispatchIDcolumnIndex = 1

@@ -233,8 +233,8 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
     ],
 )
 parsersDict = {
-    "default": xls_import.xlsx_to_dispatches,
-    "BBVinosParser": xls_import.bbvinos_xlsx_to_dispatches,
+    "default": xls_import.XlsxParser,
+    "BBVinosParser": xls_import.BbvinosXlsxParser,
 }
 
 
@@ -271,6 +271,7 @@ def user_overrides(emailAddress):
 
 
 def main():
+    # Iniciar conección con el servidor IMAP
     LogicaAPI = BeetrackAPI(os.getenv("BEETRACK_APIKEY"), BASE_URL)
     MailOutbox = mail_handler.SMTPHandler(
         user=os.getenv("IMAP_USER"),
@@ -281,7 +282,7 @@ def main():
     MailInbox = mail_handler.Inbox(
         os.getenv("IMAP_USER"), os.getenv("IMAP_PASSWD"), os.getenv("IMAP_SERVER")
     )
-
+    # Revisar si hay correos no leídos
     fetchedEmails = MailInbox.check_inbox()
     if len(fetchedEmails) == 0:
         timestamp = time.strftime("%H:%M:%S")
@@ -289,6 +290,7 @@ def main():
         MailInbox.logout()
         return 0
     for email in fetchedEmails:
+        # Si es que hay correos no-leídos, revisar si viene de un correo autorizado
         if email_in_database(email._from):
             timestamp = time.strftime("%H:%M:%S")
             print(
@@ -296,6 +298,7 @@ def main():
             )
         else:
             continue
+        # Revisar si el correo tiene algún archivo adjunto válido
         if any([check_if_allowed(att) for att in email.attachments]):
             print(f"MailID {email.id} contains a valid file", file=sys.stdout)
         else:
@@ -314,6 +317,7 @@ def main():
             .dropna()
             .iloc[0]
         )
+        # Revisar si el usuario puede sobrescribir información
         if user_overrides(email._from):
             print(
                 "[{timestamp}] Sender can override data. Reading mail body".format(
@@ -337,6 +341,7 @@ def main():
                 )
         timestamp = time.strftime("%H:%M:%S")
         reports = []
+        # Escanear archivos adjuntos
         for attachment in email.attachments:
             if not check_if_allowed(attachment):
                 continue
@@ -355,9 +360,10 @@ def main():
                 chosenParser = parsersDict[customParserQuery.iloc[0]]
             else:
                 chosenParser = parsersDict["default"]
-            foundDispatchesData, warnings = chosenParser(
-                attachment, clientName, pickupAddress
-            )
+            parsedSheet = chosenParser(attachment, clientName, pickupAddress)
+            parsedSheet.parse()
+            foundDispatchesData = parsedSheet.foundDispatches
+            warnings = parsedSheet.warningSet
             reportData = {
                 "filename": os.path.basename(attachment),
                 "general_issues": warnings,
