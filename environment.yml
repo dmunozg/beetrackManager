@@ -1,10 +1,10 @@
 name: LogicaMain
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - python-dotenv
   - pandas
   - requests
   - openpyxl
   - ipython
-prefix: /home/dmunozg/miniconda3/envs/LogicaMain
