@@ -340,7 +340,7 @@ class BodegaRowParser(defaultRowParser):
             admissionType = "Retiro"
         elif cell.value.upper() not in [i.upper() for i in admissionTypeSet]:
             self.warningList.append(
-                "{} no está en la lista de centros de distribución. Se dejará como retiro si no se corrije.".format(
+                "{} no está en la lista de centros de distribución. Se dejará como retiro si no se corrige.".format(
                     cell.value
                 )
             )
@@ -372,7 +372,7 @@ class BodegaRowParser(defaultRowParser):
             else:
                 self.errorCode = 1 if self.errorCode != 2 else 2
                 self.warningList.append(
-                    '"{}" no se reconoce como un tipo de carga. Se dejará como carga seca si no se corrije.'.format(
+                    '"{}" no se reconoce como un tipo de carga. Se dejará como carga seca si no se corrige.'.format(
                         cell.value
                     )
                 )
