@@ -60,7 +60,7 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "TEST",
             "Reibo 3619, Puente Alto",
             True,  # Allow override
-            None,  # Custom Parser
+            "BodegaParser",  # Custom Parser
         ],
         [
             "matias@logicaexpress.cl",
@@ -235,6 +235,7 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
 parsersDict = {
     "default": xls_import.XlsxParser,
     "BBVinosParser": xls_import.BbvinosXlsxParser,
+    "BodegaParser": xls_import.BodegaXlsxParser,
 }
 
 
@@ -402,7 +403,6 @@ def main():
                     print(*warnings, sep="\n", file=sys.stderr)
                     continue
                 else:
-                    response = LogicaAPI.create_dispatch(newDispatch.dump_dict())
                     if os.getenv("DEBUG"):
                         with open(
                             "{id}.json".format(id=newDispatch.id), "w"
@@ -413,7 +413,8 @@ def main():
                                 indent=4,
                                 ensure_ascii=False,
                             )
-                    print(response)
+                    response = LogicaAPI.create_dispatch(newDispatch.dump_dict())
+                    print(json.loads(response.content))
                 if errorCode == 1:
                     print(
                         "[{timestamp}] Dispatch {dispatchCode} was imported with issues:".format(
@@ -446,11 +447,16 @@ def main():
             outboxHandler=MailOutbox,
             replyingTo=email.emailObject,
         )
+        # Si el remitente del correo puede sobre-escribir, probablemente sea un colaborador
+        if user_overrides(email._from):
+            sender = "Un colaborador"
+        else:
+            sender = clientName
         mail_handler.send_confirmation_mail(
             reports,
             _from=os.getenv("IMAP_USER"),
             to="matias@logicaexpress.cl",
-            subject="El cliente {} añadió despachos al sistema.".format(clientName),
+            subject="{} añadió despachos al sistema.".format(sender),
             outboxHandler=MailOutbox,
         )
         email.mark_read()

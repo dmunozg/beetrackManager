@@ -4,8 +4,15 @@ from six import string_types
 
 
 class Item:
+    weight = None
+
     def __init__(
-        self, itemDict=None, name=None, description=None, quantity=0, code=None,
+        self,
+        itemDict=None,
+        name=None,
+        description=None,
+        quantity=0,
+        code=None,
     ):
         if isinstance(itemDict, dict):
             self.id = itemDict["id"]
@@ -37,6 +44,8 @@ class Item:
             itemDict["quantity"] = self.quantity
         if self.code:
             itemDict["code"] = self.code
+        if self.weight:
+            itemDict["extras"] = [{"name": "Peso", "value": str(self.weight)}]
         return itemDict
 
     def dump_json(self):
@@ -45,13 +54,19 @@ class Item:
 
 # TODO
 # Esto hay que cambiarlo por una base de datos
-dispatchTypeDict = {"LAST MILE": 0, "FIRST MILE": 1, "FULFILLMENT": 2}
+dispatchTypeDict = {"LAST MILE": 0, "FIRST MILE": 1, "FULFILLMENT": 2, "FORWARDING": 3}
 dispatchTypeReverseDict = {v: k for k, v in dispatchTypeDict.items()}
 dispatchPriorityDict = {"NORMAL": 0, "URGENTE": 1}
 dispatchPriorityReverseDict = {v: k for k, v in dispatchPriorityDict.items()}
 
 
 class Dispatch:
+    distributionCenter = None
+    bulkType = None
+    admission = None
+    forwardingSender = None
+    forwardingSenderAddress = None
+
     def __init__(
         self,
         dispatchDict,
@@ -70,7 +85,7 @@ class Dispatch:
         items=[],
         client=None,
         mode=2,
-        dispatchType=0,  # 0 = Last Mile, 1 = First Mile, 2 = Fullfillment.
+        dispatchType=0,  # 0 = Last Mile, 1 = First Mile, 2 = Fullfillment 3 = Forwarding.
     ):
         if isinstance(dispatchDict, dict):
             self.id = dispatchDict["identifier"]
@@ -227,6 +242,29 @@ class Dispatch:
             )
         if self.pickupAddress:
             dispatchDict["pickup_address"] = {"name": self.pickupAddress}
+        # Si el despacho es un Forwarding, debe incluir el centro de despacho.
+        if self.dispatchType == 3:
+            self.mode = 1
+            dispatchDict["place"] = self.distributionCenter
+            # Además debe incluír si fué un retiro o se despachó en bodega
+            dispatchDict["tags"].append({"name": "Admisión", "value": self.admission})
+            # Y marcar que ya fue recibido en bodega
+            dispatchDict["status_id"] = 2
+        if self.forwardingSender:
+            dispatchDict["tags"].append(
+                {"name": "FW_Remitente", "value": self.forwardingSender}
+            )
+        if self.forwardingSenderAddress:
+            dispatchDict["tags"].append(
+                {
+                    "name": "FW_Remitente_Dirección",
+                    "value": self.forwardingSenderAddress,
+                }
+            )
+        if self.bulkType:
+            dispatchDict["tags"].append(
+                {"name": "Tipo de carga", "value": self.bulkType}
+            )
         dispatchDict["mode"] = self.mode
         return dispatchDict
 

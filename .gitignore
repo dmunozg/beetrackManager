@@ -132,3 +132,4 @@ dmypy.json
 APIKEY
 .env
 attachments/
+.vscode/
