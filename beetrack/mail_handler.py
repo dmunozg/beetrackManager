@@ -157,12 +157,14 @@ class Inbox:
                     # extract content type of email
                     content_type = part.get_content_type()
                     content_disposition = str(part.get("Content-Disposition"))
-                    try:
-                        # get the email body
-                        body = part.get_payload(decode=True).decode()
-                    except:
-                        pass
-                    if "attachment" in content_disposition:
+                    #try:
+                    #    # get the email body
+                    #    body = part.get_payload(decode=True).decode()
+                    #except:
+                    #    pass
+                    if (part.get_content_type() == 'text/plain') and (part.get('Content-Disposition') is None):
+                        body = part.get_payload()
+                    elif "attachment" in content_disposition:
                         # download attachment
                         filename, encoding = email.header.decode_header(
                             part.get_filename()
