@@ -207,20 +207,20 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             None,
         ],
         [
-            "cekuatro@gmail.com",
-            "TSL Group Cargo SpA",
-            "TSL1",
-            "Armando Cortinez Oriente 945, Pudahuel",
-            False,
-            None,
-        ],
-        [
             "hgomez@axiomatix.cl",
             "Axiomatix SpA",
             "AXI1",
             "Fukui 6828, La Florida",
             False,
             None,
+        ],
+        [
+            "mario@logicaexpress.cl",
+            "Hospital Hanga Roa",
+            "HHR",
+            "Simón Paoa, Rapa Nui",
+            True,
+            "BodegaParser",
         ],
     ],
     columns=[
@@ -459,7 +459,7 @@ def main():
             subject="{} añadió despachos al sistema.".format(sender),
             outboxHandler=MailOutbox,
         )
-        email.mark_read()
+#        email.mark_read()
     MailInbox.logout()
     print(
         "[{timestamp}] Checked all mails. Going to sleep.".format(
