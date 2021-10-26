@@ -244,7 +244,7 @@ class Dispatch:
             dispatchDict["pickup_address"] = {"name": self.pickupAddress}
         # Si el despacho es un Forwarding, debe incluir el centro de despacho.
         if self.dispatchType == 3:
-            self.mode = 2
+            self.mode = 0
             dispatchDict["place"] = self.distributionCenter
             # Además debe incluír si fué un retiro o se despachó en bodega
             dispatchDict["tags"].append({"name": "Admisión", "value": self.admission})
