@@ -249,8 +249,8 @@ class Dispatch:
             # Además debe incluír si fué un retiro o se despachó en bodega
             dispatchDict["tags"].append({"name": "Admisión", "value": self.admission})
             # Y marcar que ya fue recibido en bodega
-            dispatchDict["status_id"] = 1
-            dispatchDict["substatus"] = "En bodega"
+            dispatchDict["status_id"] = 2
+            # dispatchDict["substatus"] = "En bodega"
         if self.forwardingSender:
             dispatchDict["tags"].append(
                 {"name": "FW_Remitente", "value": self.forwardingSender}
