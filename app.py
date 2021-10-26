@@ -459,7 +459,7 @@ def main():
             subject="{} añadió despachos al sistema.".format(sender),
             outboxHandler=MailOutbox,
         )
-#        email.mark_read()
+        email.mark_read()
     MailInbox.logout()
     print(
         "[{timestamp}] Checked all mails. Going to sleep.".format(
