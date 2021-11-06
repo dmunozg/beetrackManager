@@ -126,9 +126,12 @@ class Inbox:
                 )
                 continue
             parsedEmail = email.message_from_bytes(rawEmail[1])
-            rawSubject, encoding = email.header.decode_header(
+            try:
+                rawSubject, encoding = email.header.decode_header(
                 parsedEmail.get("Subject")
-            )[0]
+                )[0]
+            except TypeError:
+                rawSubject = "NO_SUBJECT"
             if isinstance(rawEmail, bytes):
                 subject = rawSubject.decode(encoding)
             else:
@@ -153,17 +156,22 @@ class Inbox:
             body = None
             if parsedEmail.is_multipart():
                 # iterate over email parts
+                foundTextPart = False
                 for part in parsedEmail.walk():
                     # extract content type of email
                     content_type = part.get_content_type()
                     content_disposition = str(part.get("Content-Disposition"))
                     #try:
-                    #    # get the email body
+                        # get the email body
                     #    body = part.get_payload(decode=True).decode()
                     #except:
                     #    pass
                     if (part.get_content_type() == 'text/plain') and (part.get('Content-Disposition') is None):
                         body = part.get_payload()
+                        foundTextPart = True
+                    elif (part.get_content_type() == 'text/html') and not foundTextPart:
+                        body = part.get_payload(decode=True).decode()
+                        print(body)
                     elif "attachment" in content_disposition:
                         # download attachment
                         filename, encoding = email.header.decode_header(
@@ -212,9 +220,10 @@ class SMTPHandler:
             f=mail._from
         )
         if replyingTo:
-            message["Subject"] = "RE: " + replyingTo["Subject"].replace(
-                "Re: ", ""
-            ).replace("RE: ", "")
+            if replyingTo["Subject"] is not None:
+                message["Subject"] = "RE: " + replyingTo["Subject"].replace(
+                    "Re: ", ""
+                ).replace("RE: ", "")
             message["References"] = replyingTo[
                 "Message-ID"
             ]  # +replyingTo["References"].strip()
