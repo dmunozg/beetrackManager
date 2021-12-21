@@ -222,6 +222,14 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             True,
             "BodegaParser",
         ],
+        [
+            "logistica@tecnowavespa.com",
+            "Tecnowave SpA",
+            "TEC",
+            "Tercera Avenida 1198, San Miguel",
+            False,
+            None,
+        ],
     ],
     columns=[
         "allowedEmail",
