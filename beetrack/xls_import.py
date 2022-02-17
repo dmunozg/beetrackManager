@@ -90,6 +90,10 @@ class defaultRowParser:
                 self.errorCode = 2
                 self.warningList.append("El número de bultos debe ser un valor entero.")
                 itemQuantity = None
+            except TypeError:
+                self.errorCode = 2
+                self.warningList.append("El número de bultos debe ser un número entero.")
+                itemQuantity = None
         elif cell.value < 0:
             self.errorCode = 2
             self.warningList.append("El número de bultos no puede ser negativo.")
@@ -145,6 +149,17 @@ class defaultRowParser:
             priority = dispatchPriorityDict[cell.value.upper()]
         return priority
 
+    def validate_contact_name(self, cell) -> str:
+        if type(cell.value) != str:
+            self.errorCode = 1 if self.errorCode != 2 else 2
+            self.warningList.append(
+                "No se reconoce el nombre del contacto, se dejará vacío si no se corrige."
+            )
+            contactName = ""
+        else:
+            contactName = cell.value.strip()
+        return contactName
+
     def parse(self):
         dispatchID = self.validate_ID(self.excelRow[0])
         documentType = self.validate_document_type(self.excelRow[1])
@@ -153,7 +168,7 @@ class defaultRowParser:
         itemDescription = self.excelRow[4].value
         itemQuantity = self.validate_item_quantity(self.excelRow[5])
         transportType = self.validate_transport_type(self.excelRow[6])
-        contactName = self.excelRow[7].value
+        contactName = self.validate_contact_name(self.excelRow[7])
         contactPhone = self.excelRow[8].value
         contactEmail = self.excelRow[9].value
         contactAddress = self.validate_contact_address(
