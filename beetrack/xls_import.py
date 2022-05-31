@@ -49,9 +49,12 @@ class defaultRowParser:
             )
         else:
             for dt in documentTypeDict.keys():
-                if cell.value.upper().strip() == dt.upper():
-                    documentType = documentTypeDict[dt]
-                    break
+                try:
+                    if cell.value.upper().strip() == dt.upper():
+                        documentType = documentTypeDict[dt]
+                        break
+                except AttributeError:
+                    continue
             else:
                 self.errorCode = 1 if self.errorCode != 2 else 2
                 self.warningList.append(
