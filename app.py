@@ -63,6 +63,14 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "BodegaParser",  # Custom Parser
         ],
         [
+            "cekuatro@gmail.com",
+            "Pruebas",
+            "TEST",
+            "Cerro Loma Larga, Puente Alto",
+            True,  # Allow override
+            "BodegaParser",  # Custom Parser
+        ],
+        [
             "matias@logicaexpress.cl",
             "Pruebas",
             "TEST",
@@ -227,6 +235,30 @@ ALLOWED_CLIENTS_DF = pd.DataFrame(
             "Tecnowave SpA",
             "TEC",
             "Tercera Avenida 1198, San Miguel",
+            False,
+            None,
+        ],
+        [
+            "scastro@sitechile.cl",
+            "Site Chile SA",
+            "SIT",
+            "Passy 50, Providencia",
+            False,
+            None,
+        ],
+        [
+            "mvargas@sitechile.cl",
+            "Site Chile SA",
+            "SIT",
+            "Passy 50, Providencia",
+            False,
+            None,
+        ],
+        [
+            "bgodoy@sitechile.cl",
+            "Site Chile SA",
+            "SIT",
+            "Passy 50, Providencia",
             False,
             None,
         ],

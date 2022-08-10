@@ -205,6 +205,22 @@ class Inbox:
             )
         return foundEmails
 
+def sanitize_mail_subject(subjectString):
+    removals = ["\n",
+                "\r",
+                "Re: ",
+                "RE: "]
+    sanitizedString = subjectString
+    for remov in removals:
+        sanitizedString = sanitizedString.replace(remov, "")
+    return sanitizedString.strip()
+
+def remove_linefeed(feed):
+    removals = ["\n", "\r"]
+    sanitizedFeed = feed
+    for remov in removals:
+        sanitizedFeed = sanitizedFeed.replace(remov, "")
+    return sanitizedFeed.strip()
 
 class SMTPHandler:
     def __init__(self, user: str, passwd: str, server: str, port: int = 465):
@@ -221,14 +237,12 @@ class SMTPHandler:
         )
         if replyingTo:
             if replyingTo["Subject"] is not None:
-                message["Subject"] = "RE: " + replyingTo["Subject"].replace(
-                    "Re: ", ""
-                ).replace("RE: ", "")
+                message["Subject"] = "RE: "+sanitize_mail_subject(replyingTo["Subject"])
             message["References"] = replyingTo[
                 "Message-ID"
             ]  # +replyingTo["References"].strip()
             message["In-Reply-To"] = replyingTo["Message-ID"]
-            message["Thread-Topic"] = replyingTo["Thread-Topic"]
+            message["Thread-Topic"] = remove_linefeed(replyingTo["Thread-Topic"])
             message["Thread-Index"] = replyingTo["Thread-Index"]
         else:
             message["Subject"] = mail.subject
