@@ -216,6 +216,8 @@ def sanitize_mail_subject(subjectString):
     return sanitizedString.strip()
 
 def remove_linefeed(feed):
+    if feed is None:
+        return feed
     removals = ["\n", "\r"]
     sanitizedFeed = feed
     for remov in removals:
