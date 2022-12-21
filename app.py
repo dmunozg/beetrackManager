@@ -50,236 +50,30 @@ BASE_URL = "https://app.beetrack.com/api/external/v1"
 ALLOWED_FILES_EXTENSIONS = [
     "XLSX",
 ]
-# TODO
-# Esto hay que reemplazarlo por una tabla SQL
-ALLOWED_CLIENTS_DF = pd.DataFrame(
-    [
-        [
-            "lkeeler.flipout@gmail.com",
-            "Pruebas",
-            "TEST",
-            "Reibo 3619, Puente Alto",
-            True,  # Allow override
-            "BodegaParser",  # Custom Parser
-        ],
-        [
-            "cekuatro@gmail.com",
-            "Pruebas",
-            "TEST",
-            "Cerro Loma Larga, Puente Alto",
-            True,  # Allow override
-            "BodegaParser",  # Custom Parser
-        ],
-        [
-            "matias@logicaexpress.cl",
-            "Pruebas",
-            "TEST",
-            "Cerro Loma Larga 3624, Puente Alto",
-            True,  # Allow override
-            None,  # Custom Parser
-        ],
-        [
-            "carolina.sierra@bbvinos.com",
-            "BBVinos",
-            "BBV1",
-            "Las Parcelas 7950, Peñalolen",
-            False,
-            "BBVinosParser",
-        ],
-        [
-            "rodrigo.curihuentro@bbvinos.com",
-            "BBVinos",
-            "BBV1",
-            "Puerto Madero 9710, Pudahuel",
-            False,
-            "BBVinosParser",
-        ],
-        [
-            "rcurihuentro@eit.cl",
-            "BBVinos",
-            "BBV1",
-            "Puerto Madero 9710, Pudahuel",
-            False,
-            "BBVinosParser",
-        ],
-        [
-            "paula.sierra@bbvinos.com",
-            "BBVinos",
-            "BBV1",
-            "Puerto Madero 9710, Pudahuel",
-            False,
-            "BBVinosParser",
-        ],
-        [
-            "comercial@bbvinos.com",
-            "BBVinos",
-            "BBV1",
-            "Puerto Madero 9710, Pudahuel",
-            False,
-            "BBVinosParser",
-        ],
-        [
-            "bodega-cl@prominent.com",
-            "Prominent SpA",
-            "PROM",
-            "Diagonal Oriente 1755, Ñuñoa",
-            False,
-            None,
-        ],
-        [
-            "Contreras.jhonny@prominent.com",
-            "Prominent SpA",
-            "PROM",
-            "Diagonal Oriente 1755, Ñuñoa",
-            False,
-            None,
-        ],
-        [
-            "Administracion-cl@prominent.com",
-            "Prominent SpA",
-            "PROM",
-            "Diagonal Oriente 1755, Ñuñoa",
-            False,
-            None,
-        ],
-        [
-            "Castillo.alex@promiment.com",
-            "Prominent SpA",
-            "PROM",
-            "Diagonal Oriente 1755, Ñuñoa",
-            False,
-            None,
-        ],
-        [
-            "juan@vdalcohuaz.cl",
-            "Altas Tierras de Alcohuaz",
-            "ATA1",
-            "Presidente José Battle y Ordóñez 4835, Ñuñoa",
-            False,
-            None,
-        ],
-        [
-            "matias@vdalcohuaz.cl",
-            "Altas Tierras de Alcohuaz",
-            "ATA1",
-            "Presidente José Battle y Ordóñez 4835, Ñuñoa",
-            False,
-            None,
-        ],
-        [
-            "pedidos@vdalcohuaz.cl",
-            "Altas Tierras de Alcohuaz",
-            "ATA1",
-            "Presidente José Battle y Ordóñez 4835, Ñuñoa",
-            False,
-            None,
-        ],
-        [
-            "javicaceres1831@gmail.com",
-            "Bianca Rose Boutique",
-            "BRB1",
-            "Primo de Rivera 501, Maipu",
-            False,
-            None,
-        ],
-        [
-            "Javieracastillocampos@hotmail.cl",
-            "Arenas Cat",
-            "ARC1",
-            "Pasaje Padre Abdón Cifuentes 3312, Puente Alto",
-            False,
-            None,
-        ],
-        [
-            "arenascatsantiago@gmail.com",
-            "Arenas Cat",
-            "ARC1",
-            "Pasaje Padre Abdón Cifuentes 3312, Puente Alto",
-            False,
-            None,
-        ],
-        [
-            "alan.saul.aravena@gmail.com",
-            "Arenas Cat",
-            "ARC1",
-            "Pasaje Padre Abdón Cifuentes 3312, Puente Alto",
-            False,
-            None,
-        ],
-        [
-            "cbarrientos@tslcargo.cl",
-            "TSL Group Cargo SpA",
-            "TSL1",
-            "Armando Cortinez Oriente 945, Pudahuel",
-            False,
-            None,
-        ],
-        [
-            "bgonzalez@tslcargo.cl",
-            "TSL Group Cargo SpA",
-            "TSL1",
-            "Armando Cortinez Oriente 945, Pudahuel",
-            False,
-            None,
-        ],
-        [
-            "hgomez@axiomatix.cl",
-            "Axiomatix SpA",
-            "AXI1",
-            "Fukui 6828, La Florida",
-            False,
-            None,
-        ],
-        [
-            "mario@logicaexpress.cl",
-            "Hospital Hanga Roa",
-            "HHR",
-            "Simón Paoa, Rapa Nui",
-            True,
-            "BodegaParser",
-        ],
-        [
-            "logistica@tecnowavespa.com",
-            "Tecnowave SpA",
-            "TEC",
-            "Tercera Avenida 1198, San Miguel",
-            False,
-            None,
-        ],
-        [
-            "scastro@sitechile.cl",
-            "Site Chile SA",
-            "SIT",
-            "Passy 50, Providencia",
-            False,
-            None,
-        ],
-        [
-            "mvargas@sitechile.cl",
-            "Site Chile SA",
-            "SIT",
-            "Passy 50, Providencia",
-            False,
-            None,
-        ],
-        [
-            "bgodoy@sitechile.cl",
-            "Site Chile SA",
-            "SIT",
-            "Passy 50, Providencia",
-            False,
-            None,
-        ],
-    ],
-    columns=[
-        "allowedEmail",
-        "clientName",
-        "codePrefix",
-        "pickupAddress",
-        "allowOverride",
-        "customParser",
-    ],
-)
+
+from clientList import ALLOWED_CLIENTS_DF
+# Archivo clientList.py contiene un DF con la lista de clientes
+# El archivo clientList debe estar en el siguiente formato general:
+# ALLOWED_CLIENTS_DF = pd.DataFrame(
+#     [
+#         [
+#           "cliente@correo.dom",
+#           "NombreDelCliente",
+#           "COD",
+#           "Calle 1234, Comuna",
+#           False, #True si puede sobre-escribir a otros clientes
+#           None, #Tipo de parser para el archivo xml
+#         ]
+#     ], columns=[
+#        "allowedEmail",
+#        "clientName",
+#        "codePrefix",
+#        "pickupAddress",
+#        "allowOverride",
+#        "customParser",
+#        ],
+# )
+
 parsersDict = {
     "default": xls_import.XlsxParser,
     "BBVinosParser": xls_import.BbvinosXlsxParser,
